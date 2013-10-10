@@ -1,0 +1,55 @@
+html,body { height:100%; }
+
+table.grid_map {
+    border:1px solid gray;
+    }
+.grid_map td {
+    border:1px solid gray;
+    margin:0px;
+    padding:5px;
+    width:80px;
+    height:80px;
+    }
+
+.svg-control-item:hover{
+    cursor:move;
+}
+
+
+rect {
+    shape-rendering: geometricPrecision;
+}
+
+input {
+        margin:0px;
+        padding:0px;
+}
+
+select,
+textarea,
+input[type="text"],
+input[type="password"],
+input[type="datetime"],
+input[type="datetime-local"],
+input[type="date"],
+input[type="month"],
+input[type="time"],
+input[type="week"],
+input[type="number"],
+input[type="email"],
+input[type="url"],
+input[type="search"],
+input[type="tel"],
+input[type="color"],
+.uneditable-input {
+  /* display: inline-block; */
+  padding: 0px;
+  margin-bottom: 0px;
+  font-size: 14px;
+  /* line-height: 20px; */
+  color: #555555;
+  vertical-align: middle;
+  -webkit-border-radius: 0px;
+     -moz-border-radius: 0px;
+          border-radius: 0px;
+}

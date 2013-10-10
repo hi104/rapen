@@ -1,0 +1,22 @@
+<filter id="drop-shadow" width="150%" height="150%">
+  <feGaussianBlur in="SourceAlpha" result="blur" stdDeviation="2" />
+  <feOffset result="offsetBlur" dx="2" dy="2" />
+  <feBlend in="SourceGraphic" in2="offsetBlur" mode="normal" />
+</filter>
+<filter id="feComponentTransfer" >
+  <feComponentTransfer>
+    <feFuncR type="linear" slope="-1" intercept="1"/>
+    <feFuncG type="linear" slope="-1" intercept="1"/>
+    <feFuncB type="linear" slope="-1" intercept="1"/>
+  </feComponentTransfer>
+</filter>
+<filter id="feMorphology3" filterUnits="userSpaceOnUse">
+  <feMorphology in="SourceAlpha" operator="dilate" radius="4"/>
+  <feMerge>
+    <feMergeNode/>
+    <feMergeNode in="SourceGraphic"/>
+  </feMerge>
+</filter>
+<filter id="feBlur" filterUnits="userSpaceOnUse">
+  <feGaussianBlur in="SourceGraphic" stdDeviation="1" />
+</filter>
