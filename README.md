@@ -3,8 +3,6 @@ rapen : experimental svg editor
 
 rapen is web based svg editor
 
-![](images/screen_shot1.png "rapen")
-
 only work in chrome browser
 
 http://hi104.github.io/rapen/
