@@ -79,9 +79,9 @@ $(document).ready(() =>
 
     @filterItemsView.setTemplate(_.template('<rect x="10" y="10" filter="url(#{{element_id}})" fill="white" width="30" height="30"></rect>'))
 
-    @gradientItemsView.loadFile("static/_gradient-defs.html")
-    @patternItemsView.loadFile("static/_pattern-defs.html")
-    @filterItemsView.loadFile("static/_filter-defs.html")
+    @gradientItemsView.loadFile("partial/_gradient-defs.html")
+    @patternItemsView.loadFile("partial/_pattern-defs.html")
+    @filterItemsView.loadFile("partial/_filter-defs.html")
 
     @orderControl = new ZOrderControl(canvas:@SvgCanvasBase)
     @orderControl.bind("onMove", () => inspectorListView.sortByIndex())

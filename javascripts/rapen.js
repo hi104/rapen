@@ -5355,9 +5355,9 @@
       element_key: "filter_id"
     });
     _this.filterItemsView.setTemplate(_.template('<rect x="10" y="10" filter="url(#{{element_id}})" fill="white" width="30" height="30"></rect>'));
-    _this.gradientItemsView.loadFile("static/_gradient-defs.html");
-    _this.patternItemsView.loadFile("static/_pattern-defs.html");
-    _this.filterItemsView.loadFile("static/_filter-defs.html");
+    _this.gradientItemsView.loadFile("partial/_gradient-defs.html");
+    _this.patternItemsView.loadFile("partial/_pattern-defs.html");
+    _this.filterItemsView.loadFile("partial/_filter-defs.html");
     _this.orderControl = new ZOrderControl({
       canvas: _this.SvgCanvasBase
     });

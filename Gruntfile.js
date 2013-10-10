@@ -79,6 +79,7 @@ module.exports = function(grunt) {
             server: {
                 options: {
                     hostname:'*', 
+                    directory:"rapen", 
                     port: 9000
                 }
             }
