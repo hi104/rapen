@@ -24,6 +24,7 @@ class @PositionControl extends Backbone.View
         @trigger("onMouseDown", @, e)
         @pre_position = e
         @pre_matrix = @getItem().getLocalMatrix()
+        @pre_ctm = @getItem().getCTM()
 
     onDragging:(e) =>
         pos = @_getMovedControlPosition(e)
@@ -47,7 +48,7 @@ class @PositionControl extends Backbone.View
         pos
 
     _snapPoints:(pos) =>
-        points = @getItem()._getMatrixBBoxPoints(@_getMoveMatrix(pos))
+        points = @getItem()._getMatrixBBoxPoints(@_getMoveCtmMatrix(pos))
         center_point = SVGUtil.createPoint((points[0].x + points[3].x)/2, (points[0].y + points[3].y)/2)
         points.push(center_point)
         points
@@ -63,14 +64,20 @@ class @PositionControl extends Backbone.View
     onDrop:(e) =>
         @trigger("onDrop", @)
 
-
-    _getMoveMatrix:(pos) =>
+    _getItemCoordPos:(pos) =>
         item = @getItem()
         move = SVGUtil.createPoint(pos.x, pos.y)
         matrix_inverse = item.getCTM().inverse()
         matrix_inverse.e = 0
         matrix_inverse.f = 0
         move = move.matrixTransform(matrix_inverse)
+
+    _getMoveCtmMatrix:(pos) =>
+        move = @_getItemCoordPos(pos)
+        @pre_ctm.translate(move.x, move.y)
+
+    _getMoveMatrix:(pos) =>
+        move = @_getItemCoordPos(pos)
         @pre_matrix.translate(move.x, move.y)
 
     movePosition:(pos) =>

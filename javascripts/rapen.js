@@ -966,6 +966,8 @@
       this._getMovedPosition = __bind(this._getMovedPosition, this);
       this.movePosition = __bind(this.movePosition, this);
       this._getMoveMatrix = __bind(this._getMoveMatrix, this);
+      this._getMoveCtmMatrix = __bind(this._getMoveCtmMatrix, this);
+      this._getItemCoordPos = __bind(this._getItemCoordPos, this);
       this.onDrop = __bind(this.onDrop, this);
       this._snappingItem = __bind(this._snappingItem, this);
       this._snapPoints = __bind(this._snapPoints, this);
@@ -1009,7 +1011,7 @@
       this.trigger("onMouseDown", this, e);
       this.pre_position = e;
       this.pre_matrix = this.getItem().getLocalMatrix();
-      return this.suspend_id = this.el.ownerSVGElement.suspendRedraw(500);
+      return this.pre_ctm = this.getItem().getCTM();
     };
 
     PositionControl.prototype.onDragging = function(e) {
@@ -1040,7 +1042,7 @@
 
     PositionControl.prototype._snapPoints = function(pos) {
       var center_point, points;
-      points = this.getItem()._getMatrixBBoxPoints(this._getMoveMatrix(pos));
+      points = this.getItem()._getMatrixBBoxPoints(this._getMoveCtmMatrix(pos));
       center_point = SVGUtil.createPoint((points[0].x + points[3].x) / 2, (points[0].y + points[3].y) / 2);
       points.push(center_point);
       return points;
@@ -1056,18 +1058,28 @@
     };
 
     PositionControl.prototype.onDrop = function(e) {
-      this.trigger("onDrop", this);
-      return this.el.ownerSVGElement.unsuspendRedraw(this.suspend_id);
+      return this.trigger("onDrop", this);
     };
 
-    PositionControl.prototype._getMoveMatrix = function(pos) {
+    PositionControl.prototype._getItemCoordPos = function(pos) {
       var item, matrix_inverse, move;
       item = this.getItem();
       move = SVGUtil.createPoint(pos.x, pos.y);
       matrix_inverse = item.getCTM().inverse();
       matrix_inverse.e = 0;
       matrix_inverse.f = 0;
-      move = move.matrixTransform(matrix_inverse);
+      return move = move.matrixTransform(matrix_inverse);
+    };
+
+    PositionControl.prototype._getMoveCtmMatrix = function(pos) {
+      var move;
+      move = this._getItemCoordPos(pos);
+      return this.pre_ctm.translate(move.x, move.y);
+    };
+
+    PositionControl.prototype._getMoveMatrix = function(pos) {
+      var move;
+      move = this._getItemCoordPos(pos);
       return this.pre_matrix.translate(move.x, move.y);
     };
 
@@ -4221,7 +4233,7 @@
       point = point.matrixTransform(matrix_inverse);
       SVGUtil.setMatrixTransform(this.mainCanvas, matrix.translate(point.x, point.y));
       this.pre_position = e;
-      return this.trigger("onChangeZoomPos", this);
+      return this.trigger("onZoom", this);
     };
 
     SvgCanvas.prototype.moveDrop = function(e) {
