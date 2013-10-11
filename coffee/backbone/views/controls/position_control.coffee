@@ -24,7 +24,6 @@ class @PositionControl extends Backbone.View
         @trigger("onMouseDown", @, e)
         @pre_position = e
         @pre_matrix = @getItem().getLocalMatrix()
-        @suspend_id =  @el.ownerSVGElement.suspendRedraw(500);
 
     onDragging:(e) =>
         pos = @_getMovedControlPosition(e)
@@ -63,7 +62,6 @@ class @PositionControl extends Backbone.View
 
     onDrop:(e) =>
         @trigger("onDrop", @)
-        @el.ownerSVGElement.unsuspendRedraw(@suspend_id);
 
 
     _getMoveMatrix:(pos) =>
