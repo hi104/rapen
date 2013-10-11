@@ -149,7 +149,7 @@ class @SvgCanvas extends Backbone.View
         point = point.matrixTransform(matrix_inverse)
         SVGUtil.setMatrixTransform(@mainCanvas, matrix.translate(point.x, point.y))
         @pre_position = e
-        @trigger("onChangeZoomPos", @)
+        @trigger("onZoom", @)
 
     moveDrop:(e) =>
         $(document).unbind('mousemove', @moveDragging)
