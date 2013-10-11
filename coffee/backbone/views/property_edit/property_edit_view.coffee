@@ -16,11 +16,11 @@ class @PropertyEditView extends Backbone.View
     update:(val)=>
         values ={}
         values[@attrName] = val
-        @model.set(values)
+        @model.setAttr(values)
 
     updateOnEnter:(e) =>
         if (e.keyCode == 13) #enter
-             @update(@input.val())
+            @update(@input.val())
 
     onChange:(e) =>
         if @inputType == "color"
@@ -29,7 +29,7 @@ class @PropertyEditView extends Backbone.View
     initialize:(attrName) =>
         @attrName = @options.attrName
         @inputType = @options.inputType
-        @listenTo(@model, 'change', @render)
+        @listenTo(@model, 'update', @render)
         @initElement()
 
     initElement:() =>

@@ -92,12 +92,12 @@ class @ItemControl extends Backbone.View
         @rotate_control.render()
         @rotate_axis_control.render()
         @scale_control_set.render()
-        @line_position_control1.render()
-        @line_position_control2.render()
 
         if @selectitem.el instanceof SVGLineElement
             @line_position_control1.show()
             @line_position_control2.show()
+            @line_position_control1.render()
+            @line_position_control2.render()
             @scale_control_set.hide()
         else
             @line_position_control1.hide()

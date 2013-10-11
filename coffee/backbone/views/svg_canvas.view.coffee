@@ -89,7 +89,7 @@ class @SvgCanvas extends Backbone.View
             matrix = SVGUtil.SVG.createSVGMatrix().translate(x, y).scale(val).translate(-x, -y)
 
         SVGUtil.setMatrixTransform(canvas_el, matrix)
-        @trigger("onChangeZoomPos", {sender:@, pos:point, scale:val})
+        @trigger("onZoom", {sender:@, pos:point, scale:val})
 
     groupSelectedItem:() =>
         if @control.item_list.length > 0

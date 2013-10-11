@@ -10,24 +10,22 @@
     function PropertyEdit() {
       this.unbindElement = __bind(this.unbindElement, this);
       this.updateElement = __bind(this.updateElement, this);
+      this.setAttr = __bind(this.setAttr, this);
       this.bindElement = __bind(this.bindElement, this);
       _ref = PropertyEdit.__super__.constructor.apply(this, arguments);
       return _ref;
     }
 
-    PropertyEdit.prototype.initialize = function() {
-      var _this = this;
-      return this.on('change', function(model) {
-        return _.each(model.attributes, function(v, k) {
-          if (_this._bindingModel) {
-            return _this._bindingModel.attr(k, v);
-          }
-        });
-      });
-    };
-
     PropertyEdit.prototype.bindElement = function(el) {
       return this._bindingModel = el;
+    };
+
+    PropertyEdit.prototype.setAttr = function(values) {
+      this.set(values);
+      if (this._bindingModel) {
+        this._bindingModel.attr(values);
+      }
+      return this.trigger("update");
     };
 
     PropertyEdit.prototype.updateElement = function() {
@@ -38,7 +36,8 @@
         return attrs[attr.nodeName] = attr.nodeValue;
       });
       this.clear();
-      return this.set(attrs);
+      this.set(attrs);
+      return this.trigger("update");
     };
 
     PropertyEdit.prototype.unbindElement = function() {
@@ -966,8 +965,10 @@
     function PositionControl() {
       this._getMovedPosition = __bind(this._getMovedPosition, this);
       this.movePosition = __bind(this.movePosition, this);
+      this._getMoveMatrix = __bind(this._getMoveMatrix, this);
       this.onDrop = __bind(this.onDrop, this);
       this._snappingItem = __bind(this._snappingItem, this);
+      this._snapPoints = __bind(this._snapPoints, this);
       this._getMovedControlPosition = __bind(this._getMovedControlPosition, this);
       this.onDragging = __bind(this.onDragging, this);
       this.onMouseDown = __bind(this.onMouseDown, this);
@@ -1007,18 +1008,19 @@
     PositionControl.prototype.onMouseDown = function(e) {
       this.trigger("onMouseDown", this, e);
       this.pre_position = e;
-      return this.pre_matrix = this.getItem().getLocalMatrix();
+      this.pre_matrix = this.getItem().getLocalMatrix();
+      return this.suspend_id = this.el.ownerSVGElement.suspendRedraw(500);
     };
 
     PositionControl.prototype.onDragging = function(e) {
       var pos;
       pos = this._getMovedControlPosition(e);
-      this.movePosition(pos);
       if (e.altKey) {
         snap_line_view.clear();
         snap_line_view.render();
+        this.movePosition(pos);
       } else {
-        this._snappingItem(this, e);
+        this._snappingItem(e);
       }
       return this.trigger("onDragging", this, e);
     };
@@ -1036,23 +1038,29 @@
       return pos;
     };
 
-    PositionControl.prototype._snappingItem = function(pos_ctl, e) {
-      var movep, pos, selectView, snap_target_points;
+    PositionControl.prototype._snapPoints = function(pos) {
+      var center_point, points;
+      points = this.getItem()._getMatrixBBoxPoints(this._getMoveMatrix(pos));
+      center_point = SVGUtil.createPoint((points[0].x + points[3].x) / 2, (points[0].y + points[3].y) / 2);
+      points.push(center_point);
+      return points;
+    };
+
+    PositionControl.prototype._snappingItem = function(e) {
+      var movep, pos;
       pos = this._getMovedControlPosition(e);
-      selectView = pos_ctl.selectView;
-      snap_target_points = selectView.selectitem.getSnapPoints();
-      movep = Snapping.getSnap(snap_target_points);
+      movep = Snapping.getSnap(this._snapPoints(pos));
       pos.x = pos.x - movep.x;
       pos.y = pos.y - movep.y;
-      pos_ctl.movePosition(pos);
-      return pos_ctl.selectView.render();
+      return this.movePosition(pos);
     };
 
     PositionControl.prototype.onDrop = function(e) {
-      return this.trigger("onDrop", this);
+      this.trigger("onDrop", this);
+      return this.el.ownerSVGElement.unsuspendRedraw(this.suspend_id);
     };
 
-    PositionControl.prototype.movePosition = function(pos) {
+    PositionControl.prototype._getMoveMatrix = function(pos) {
       var item, matrix_inverse, move;
       item = this.getItem();
       move = SVGUtil.createPoint(pos.x, pos.y);
@@ -1060,7 +1068,11 @@
       matrix_inverse.e = 0;
       matrix_inverse.f = 0;
       move = move.matrixTransform(matrix_inverse);
-      return item.setMatrix(this.pre_matrix.translate(move.x, move.y));
+      return this.pre_matrix.translate(move.x, move.y);
+    };
+
+    PositionControl.prototype.movePosition = function(pos) {
+      return this.getItem().setMatrix(this._getMoveMatrix(pos));
     };
 
     PositionControl.prototype._getMovedPosition = function(e) {
@@ -2064,11 +2076,11 @@
       this.rotate_control.render();
       this.rotate_axis_control.render();
       this.scale_control_set.render();
-      this.line_position_control1.render();
-      this.line_position_control2.render();
       if (this.selectitem.el instanceof SVGLineElement) {
         this.line_position_control1.show();
         this.line_position_control2.show();
+        this.line_position_control1.render();
+        this.line_position_control2.render();
         this.scale_control_set.hide();
       } else {
         this.line_position_control1.hide();
@@ -3081,7 +3093,7 @@
     function PropertyEditSetView() {
       this.clear = __bind(this.clear, this);
       this.bindElement = __bind(this.bindElement, this);
-      this._bindElement = __bind(this._bindElement, this);
+      this.render = __bind(this.render, this);
       this._init_view = __bind(this._init_view, this);
       this.initialize = __bind(this.initialize, this);
       _ref = PropertyEditSetView.__super__.constructor.apply(this, arguments);
@@ -3113,7 +3125,7 @@
       return _results;
     };
 
-    PropertyEditSetView.prototype._bindElement = function() {
+    PropertyEditSetView.prototype.render = function() {
       var attr, view, _ref1, _results;
       this.model.updateElement();
       _ref1 = this.prop_views;
@@ -3129,9 +3141,8 @@
       this.stopListening();
       this.listen_model = target_model;
       this.model.bindElement(target_model);
-      this.model.updateElement();
-      this.listenTo(target_model, "change", this._bindElement);
-      return this._bindElement();
+      this.listenTo(target_model, "change", this.render);
+      return this.render();
     };
 
     PropertyEditSetView.prototype.clear = function() {
@@ -3192,7 +3203,7 @@
       var values;
       values = {};
       values[this.attrName] = val;
-      return this.model.set(values);
+      return this.model.setAttr(values);
     };
 
     PropertyEditView.prototype.updateOnEnter = function(e) {
@@ -3210,7 +3221,7 @@
     PropertyEditView.prototype.initialize = function(attrName) {
       this.attrName = this.options.attrName;
       this.inputType = this.options.inputType;
-      this.listenTo(this.model, 'change', this.render);
+      this.listenTo(this.model, 'update', this.render);
       return this.initElement();
     };
 
@@ -4128,7 +4139,7 @@
         matrix = SVGUtil.SVG.createSVGMatrix().translate(x, y).scale(val).translate(-x, -y);
       }
       SVGUtil.setMatrixTransform(canvas_el, matrix);
-      return this.trigger("onChangeZoomPos", {
+      return this.trigger("onZoom", {
         sender: this,
         pos: point,
         scale: val
@@ -5308,7 +5319,7 @@
     });
     $("#inspector-list").append(_this.inspectorListView.el);
     _this.event_manager.setCanvas(_this.SvgCanvasBase);
-    _this.SvgCanvasBase.bind("onChangeZoomPos", function(e) {
+    _this.SvgCanvasBase.bind("onZoom", function(e) {
       var canvas_transform;
       canvas_transform = $(_this.SvgCanvasBase.mainCanvas).attr("transform");
       $(grid_view.el).attr("stroke-width", 0.5 * (1 / SvgCanvasBase.zoomValue));

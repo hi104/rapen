@@ -1,13 +1,12 @@
 class @PropertyEdit extends Backbone.Model
-    initialize:() ->
-        @on('change', (model) =>
-            _.each(model.attributes, (v, k) =>
-                if(@_bindingModel)
-                    @_bindingModel.attr(k, v)
-            )
-        )
+
     bindElement:(el) =>
         @_bindingModel = el
+
+    setAttr:(values) =>
+        @set(values)
+        @_bindingModel.attr(values) if(@_bindingModel)
+        @trigger("update")
 
     updateElement:() =>
         attrs = {}
@@ -16,7 +15,7 @@ class @PropertyEdit extends Backbone.Model
         )
         @clear()
         @set(attrs)
-
+        @trigger("update")
 
     unbindElement:() =>
         @_bindingModel = null

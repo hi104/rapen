@@ -53,7 +53,7 @@ class @PropertyEditSetView extends Backbone.View
             @prop_views[attr] = prop_view
             @$el.append(prop_view.el)
 
-    _bindElement:() =>
+    render:() =>
         @model.updateElement()
         for attr, view of @prop_views
             view.render()
@@ -62,9 +62,8 @@ class @PropertyEditSetView extends Backbone.View
         @stopListening()
         @listen_model = target_model
         @model.bindElement(target_model)
-        @model.updateElement()
-        @listenTo(target_model, "change", @_bindElement)
-        @_bindElement()
+        @listenTo(target_model, "change", @render)
+        @render()
 
     clear:() =>
         @stopListening()

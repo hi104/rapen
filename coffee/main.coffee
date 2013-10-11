@@ -36,7 +36,7 @@ $(document).ready(() =>
     $("#inspector-list").append(@inspectorListView.el)
     @event_manager.setCanvas(@SvgCanvasBase)
 
-    @SvgCanvasBase.bind("onChangeZoomPos", (e) =>
+    @SvgCanvasBase.bind("onZoom", (e) =>
 
         canvas_transform = $(@SvgCanvasBase.mainCanvas).attr("transform")
 

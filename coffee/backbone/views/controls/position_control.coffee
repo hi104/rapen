@@ -24,16 +24,17 @@ class @PositionControl extends Backbone.View
         @trigger("onMouseDown", @, e)
         @pre_position = e
         @pre_matrix = @getItem().getLocalMatrix()
+        @suspend_id =  @el.ownerSVGElement.suspendRedraw(500);
 
     onDragging:(e) =>
         pos = @_getMovedControlPosition(e)
 
-        @movePosition(pos)
         if e.altKey
             snap_line_view.clear() #TODO global
             snap_line_view.render()
+            @movePosition(pos)
         else
-            @_snappingItem(@, e)
+            @_snappingItem( e)
 
         @trigger("onDragging", @, e)
 
@@ -46,29 +47,36 @@ class @PositionControl extends Backbone.View
                 pos.x = 0
         pos
 
-    _snappingItem:(pos_ctl, e) =>
+    _snapPoints:(pos) =>
+        points = @getItem()._getMatrixBBoxPoints(@_getMoveMatrix(pos))
+        center_point = SVGUtil.createPoint((points[0].x + points[3].x)/2, (points[0].y + points[3].y)/2)
+        points.push(center_point)
+        points
+
+    _snappingItem:(e) =>
         pos = @_getMovedControlPosition(e)
-        selectView = pos_ctl.selectView
-        snap_target_points = selectView.selectitem.getSnapPoints()
-        movep = Snapping.getSnap(snap_target_points)
+        movep = Snapping.getSnap( @_snapPoints(pos))
         pos.x = pos.x - movep.x
         pos.y = pos.y - movep.y
 
-        pos_ctl.movePosition(pos)
-        pos_ctl.selectView.render()        #
-
+        @movePosition(pos)
 
     onDrop:(e) =>
         @trigger("onDrop", @)
+        @el.ownerSVGElement.unsuspendRedraw(@suspend_id);
 
-    movePosition:(pos) =>
+
+    _getMoveMatrix:(pos) =>
         item = @getItem()
         move = SVGUtil.createPoint(pos.x, pos.y)
         matrix_inverse = item.getCTM().inverse()
         matrix_inverse.e = 0
         matrix_inverse.f = 0
         move = move.matrixTransform(matrix_inverse)
-        item.setMatrix(@pre_matrix.translate(move.x, move.y))
+        @pre_matrix.translate(move.x, move.y)
+
+    movePosition:(pos) =>
+        @getItem().setMatrix(@_getMoveMatrix(pos))
 
     _getMovedPosition:(e) =>
         dx = e.pageX - @pre_position.pageX
