@@ -35,14 +35,10 @@ class @SvgCanvas extends Backbone.View
         item
 
     setControlViewEvent:(view) =>
-        view.bind("onMouseDown", (obj, e) =>
-            @manager.onEvent("onMouseDown", obj, e)
-        )
-        view.bind("onDblClick", (obj, e) =>
-            @manager.onEvent("onDblClick", obj, e)
-        )
-        view.bind("onClick", (obj, e) =>
-            @manager.onEvent("onClick", obj, e)
+        ["onMouseDown", "onDblClick", "onClick"].forEach((event) =>
+            view.bind(event, (obj, e) =>
+                @manager.onEvent(event, obj, e)
+            )
         )
 
     onMouseWheel: (e)->

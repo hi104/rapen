@@ -4090,14 +4090,10 @@
 
     SvgCanvas.prototype.setControlViewEvent = function(view) {
       var _this = this;
-      view.bind("onMouseDown", function(obj, e) {
-        return _this.manager.onEvent("onMouseDown", obj, e);
-      });
-      view.bind("onDblClick", function(obj, e) {
-        return _this.manager.onEvent("onDblClick", obj, e);
-      });
-      return view.bind("onClick", function(obj, e) {
-        return _this.manager.onEvent("onClick", obj, e);
+      return ["onMouseDown", "onDblClick", "onClick"].forEach(function(event) {
+        return view.bind(event, function(obj, e) {
+          return _this.manager.onEvent(event, obj, e);
+        });
       });
     };
 
@@ -4435,6 +4431,8 @@
     function SvgItemToolView() {
       this.mouseDraggingItem = __bind(this.mouseDraggingItem, this);
       this.mouseUpItem = __bind(this.mouseUpItem, this);
+      this.getSelectedItemElement = __bind(this.getSelectedItemElement, this);
+      this._updateDraggingItemPosition = __bind(this._updateDraggingItemPosition, this);
       this.mouseDownItem = __bind(this.mouseDownItem, this);
       this._getDraggingItemElement = __bind(this._getDraggingItemElement, this);
       _ref = SvgItemToolView.__super__.constructor.apply(this, arguments);
@@ -4444,10 +4442,10 @@
     SvgItemToolView.prototype.initialize = function() {
       this._canvas = this.options.canvas;
       this._mainCanvas = this._canvas.mainCanvas;
-      SvgItemToolView.__super__.initialize.call(this);
       this.bind("mouseDown.item", this.mouseDownItem);
       this.bind("mouseDragging.item", this.mouseDraggingItem);
-      return this.bind("mouseUp.item", this.mouseUpItem);
+      this.bind("mouseUp.item", this.mouseUpItem);
+      return SvgItemToolView.__super__.initialize.call(this);
     };
 
     SvgItemToolView.prototype._getDraggingItemElement = function() {
@@ -4455,7 +4453,7 @@
     };
 
     SvgItemToolView.prototype.mouseDownItem = function(sender, e) {
-      var clone_node, g_elm, matrix, ondrop, point, screen_ctm,
+      var clone_node, ondrop,
         _this = this;
       $(document).mousemove(sender.onDragging);
       ondrop = function(e) {
@@ -4468,21 +4466,29 @@
         return e.stopPropagation();
       };
       $(document).mouseup(ondrop);
-      g_elm = $(sender.el).find("svg g").children()[0];
-      clone_node = g_elm.cloneNode(true);
       $("#svg-item-tool").show();
-      screen_ctm = this._mainCanvas.getScreenCTM();
-      point = SVGUtil.createPoint(e.pageX, e.pageY);
-      matrix = screen_ctm.inverse();
-      point = point.matrixTransform(matrix);
-      SVGUtil.setMatrixTransform(this._getDraggingItemElement()[0], screen_ctm.translate(point.x, point.y));
+      clone_node = this.getSelectedItemElement(sender).cloneNode(true);
       this._getDraggingItemElement().append(clone_node);
+      this._updateDraggingItemPosition(e);
       e.preventDefault();
       return e.stopPropagation();
     };
 
+    SvgItemToolView.prototype._updateDraggingItemPosition = function(e) {
+      var matrix, point, screen_ctm;
+      screen_ctm = this._mainCanvas.getScreenCTM();
+      point = SVGUtil.createPoint(e.pageX, e.pageY);
+      matrix = screen_ctm.inverse();
+      point = point.matrixTransform(matrix);
+      return SVGUtil.setMatrixTransform(this._getDraggingItemElement()[0], screen_ctm.translate(point.x, point.y));
+    };
+
+    SvgItemToolView.prototype.getSelectedItemElement = function(sender) {
+      return $(sender.el).find("svg g").children()[0];
+    };
+
     SvgItemToolView.prototype.mouseUpItem = function(sender, e) {
-      var canvas, canvas_matrix, clone_node, g_elm, isContain, pos, screen_ctm,
+      var canvas, canvas_matrix, clone_node, isContain, pos, screen_ctm,
         _this = this;
       canvas = this._canvas.$el;
       pos = canvas.position();
@@ -4493,8 +4499,7 @@
       this._getDraggingItemElement().empty();
       $("#svg-item-tool").hide();
       if (isContain()) {
-        g_elm = $(sender.el).find("svg g").children()[0];
-        clone_node = g_elm.cloneNode(true);
+        clone_node = this.getSelectedItemElement(sender).cloneNode(true);
         $(this._mainCanvas).append(clone_node);
         canvas_matrix = this._mainCanvas.getScreenCTM();
         SVGUtil.setMatrixTransform(clone_node, canvas_matrix.inverse().multiply(screen_ctm));
@@ -4503,12 +4508,7 @@
     };
 
     SvgItemToolView.prototype.mouseDraggingItem = function(sender, e) {
-      var ctm, matrix, point;
-      point = SVGUtil.createPoint(e.pageX, e.pageY);
-      ctm = this._mainCanvas.getScreenCTM();
-      matrix = ctm.inverse();
-      point = point.matrixTransform(matrix);
-      return SVGUtil.setMatrixTransform(this._getDraggingItemElement()[0], ctm.translate(point.x, point.y));
+      return this._updateDraggingItemPosition(e);
     };
 
     return SvgItemToolView;
