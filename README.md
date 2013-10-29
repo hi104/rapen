@@ -3,7 +3,7 @@ rapen : experimental svg editor
 
 rapen is web based svg editor
 
-only work in chrome browser
+work in chrome, safari
 
 http://hi104.github.io/rapen/
 
