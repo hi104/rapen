@@ -32,7 +32,10 @@ class @SvgCurveView extends Backbone.View
             point = SVGUtil.createPoint(e.pageX, e.pageY)
             point = point.matrixTransform(matrix.inverse())
             curve_location = @curve.getNearestLocation(point)
-            curve_location.divide()
+            if e.altKey
+                curve_location.split()
+            else
+                curve_location.divide()
             @pathControl.refresh()
             @_cancelEvent(e)
 

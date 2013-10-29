@@ -5,20 +5,20 @@
 $(document).ready(() =>
     @event_manager = new EventManager()
     @cloneControlView = new CloneControlView({
-        el:$("#clone-control-view"),
+        el: $("#clone-control-view"),
         line_wrapper: $("#clone-select-line-views"),
         select_el: $("#clone-selected-view"),
         manager:@event_manager
     })
     @event_manager.setControl(@cloneControlView)
     @SvgCanvasBase    = new SvgCanvas({
-        el:$("#svg-canvas-base"),
-        control:@cloneControlView,
-        mainCanvas:$("#svg-canvas")[0],
-        regionView:new SelectRegionControlView({el:$("#select-region-view")}),
-        manager:@event_manager
+        el: $("#svg-canvas-base"),
+        control: @cloneControlView,
+        mainCanvas: $("#svg-canvas")[0],
+        manager: @event_manager
     })
 
+    @event_manager.setCanvas(@SvgCanvasBase)
     @cloneControlView.setCanvas(@SvgCanvasBase)
 
     @svgPathControl = new SvgPathControlView(el:$("#path-control-panel"))
@@ -30,11 +30,10 @@ $(document).ready(() =>
     )
 
     @inspectorListView = new InspectorListView({
-        control:@cloneControlView,
-        item_list:SvgCanvasBase.item_list
+        control: @cloneControlView,
+        item_list: SvgCanvasBase.item_list
     })
     $("#inspector-list").append(@inspectorListView.el)
-    @event_manager.setCanvas(@SvgCanvasBase)
 
     @SvgCanvasBase.bind("onZoom", (e) =>
 
@@ -107,6 +106,18 @@ $(document).ready(() =>
              option = "selected"
         $("#zoom-control").append temp(option:option, name: e + "%", val: i)
 
+    for name, mode of @event_manager.modes
+        temp = _.template('<option value="{{val}}" {{option}}> {{name}}</option>')
+        option = ""
+        if(name == "control")
+             option = "selected"
+        $("#mode-control").append temp(option:option, name: name, val: name)
+
+    $("#mode-control").change((e) =>
+        mode = $("#mode-control").val()
+        @event_manager.setMode(mode)
+    )
+
     $("#zoom-control").change((e) =>
         SvgCanvasBase.zoom($("#zoom-control").val(), { x: 400, y:300}, false)
     )
@@ -114,6 +125,18 @@ $(document).ready(() =>
     key("backspace, delete", (e) =>
         e.preventDefault();
         SvgCanvasBase.deleteSelectdItem()
+    )
+
+    key("c", (e) =>
+        $("#mode-control").val("control").trigger('change')
+    )
+
+    key("t", (e) =>
+        $("#mode-control").val("text").trigger('change')
+    )
+
+    key("p", (e) =>
+        $("#mode-control").val("path").trigger('change')
     )
 
     move_item_position = (pos) =>

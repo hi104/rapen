@@ -4,7 +4,6 @@ class @SvgCanvas extends Backbone.View
         "mousewheel": "onMouseWheel"
 
     initialize: () ->
-        @regionView   = @options.regionView
         @mainCanvas   = @options.mainCanvas
         @manager      = @options.manager
         @control      = @options.control
@@ -16,6 +15,9 @@ class @SvgCanvas extends Backbone.View
     generateId: () => #better use uuid ?
         id = @unique_index++
         "item-" + id
+
+    getItems:() ->
+        @item_list
 
     removeItem:(item) =>
         @item_list.remove(item)
@@ -123,17 +125,12 @@ class @SvgCanvas extends Backbone.View
     mousedown: (e) =>
 
         @pre_position = e
-        @regionView.clear()
         @manager.reset()
 
         if(e.altKey)
             $(document).mousemove(@moveDragging)
             $(document).mouseup(@moveDrop)
-        else
-            @regionView.setStart(@_getPosition(e))
-            @regionView.setVisible(true)
-            $(document).mousemove(@regionDragging)
-            $(document).mouseup(@regionDrop)
+        @manager.onEvent("onMouseDown", @, e)
 
     moveDragging:(e) =>
         pos = @_getMovedPosition(e)
@@ -161,24 +158,6 @@ class @SvgCanvas extends Backbone.View
         offset = $(@el).offset()
         x: (e.pageX - offset.left)
         y: (e.pageY - offset.top)
-
-    regionDragging:(e) =>
-        @regionView.setEnd(@_getPosition(e))
-        @regionView.render()
-
-    regionDrop:(e) =>
-        $(document).unbind('mousemove', @regionDragging)
-        $(document).unbind('mouseup', @regionDrop)
-        @regionView.setEnd(@_getPosition(e))
-        @regionView.setContainItems(@item_list.filter((item) => not item.isLocked()))
-
-        @control.clear()
-        if @regionView.containItems().length > 0
-            @control.initControls(@regionView.containItems())
-        @trigger("onDrop", @)
-
-        @regionView.setVisible(false)
-        @regionView.render()
 
     deleteSelectdItem:() =>
         @control.item_list.each((e) =>

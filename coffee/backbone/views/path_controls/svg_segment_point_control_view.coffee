@@ -1,5 +1,11 @@
 class @SvgSegmentPointControl extends Backbone.View
 
+    events: () ->
+        "mousedown": "onMouseDown"
+        "click":"onClick"
+        "mouseover"  : "onMouseOver"
+        "mouseleave" : "onMouseLeave"
+
     initialize:() =>
         @_init()
 
@@ -41,12 +47,6 @@ class @SvgSegmentPointControl extends Backbone.View
             "width" : "12",
             "height" : "12"
         })
-
-    events: () ->
-        "mousedown": "onMouseDown"
-        "click":"onClick"
-        "mouseover"  : "onMouseOver"
-        "mouseleave" : "onMouseLeave"
 
     onClick:(e) =>
 

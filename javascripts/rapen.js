@@ -2111,79 +2111,229 @@
 (function() {
   var __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
 
+  this.ElementControlMode = (function() {
+    function ElementControlMode(maneger) {
+      this._onSvgElementView = __bind(this._onSvgElementView, this);
+      this._getRegionContainItems = __bind(this._getRegionContainItems, this);
+      this._onRegionDrop = __bind(this._onRegionDrop, this);
+      this._onSvgCanvas = __bind(this._onSvgCanvas, this);
+      this.onEvent = __bind(this.onEvent, this);
+      this.getControl = __bind(this.getControl, this);
+      _.extend(this, Backbone.Events);
+      this.maneger = maneger;
+      this.regionView = new SelectRegionControlView({
+        el: $("#select-control-region-view"),
+        canvas: this.maneger.canvas
+      });
+    }
+
+    ElementControlMode.prototype.getControl = function() {
+      return this.maneger.getControl();
+    };
+
+    ElementControlMode.prototype.onEvent = function(event, sender, e, options) {
+      if (sender instanceof SvgElementView) {
+        return this._onSvgElementView.apply(this, arguments);
+      } else if (sender instanceof SvgCanvas) {
+        return this._onSvgCanvas.apply(this, arguments);
+      }
+    };
+
+    ElementControlMode.prototype._onSvgCanvas = function(event, sender, e, options) {
+      if (event === "onMouseDown" && !e.altKey) {
+        this.regionView.canvas = this.maneger.getCanvas();
+        this.listenToOnce(this.regionView, "onRegionDrop", this._onRegionDrop);
+        return this.regionView.startSelectRegion(e);
+      }
+    };
+
+    ElementControlMode.prototype._onRegionDrop = function(region) {
+      var contain_items, control;
+      contain_items = this._getRegionContainItems(this.maneger.canvas.getItems(), this.regionView);
+      control = this.getControl();
+      control.clear();
+      if (contain_items.length > 0) {
+        return control.initControls(contain_items);
+      }
+    };
+
+    ElementControlMode.prototype._getRegionContainItems = function(_items, region) {
+      var items,
+        _this = this;
+      items = _items.filter(function(item) {
+        return !item.isLocked();
+      });
+      return items.filter(function(item) {
+        return _.any(item.getBBoxPoints(), function(p) {
+          return region.isContainPoint(p);
+        });
+      });
+    };
+
+    ElementControlMode.prototype._onSvgElementView = function(event, sender, e, options) {
+      var control;
+      control = this.getControl();
+      if (event === "onMouseDown") {
+        this.cancelEvent(e);
+        if (e.shiftKey) {
+          if (!control.exists(sender.model)) {
+            return control.addItem(sender.model);
+          }
+        } else {
+          if (!control.exists(sender.model)) {
+            control.clear();
+            control.addItem(sender.model);
+          }
+          return control.getControl().position_control.onMouseDown(e);
+        }
+      } else if (event === "onClick") {
+        return this.cancelEvent(e);
+      }
+    };
+
+    ElementControlMode.prototype.cancelEvent = function(e) {
+      e.preventDefault();
+      return e.stopPropagation();
+    };
+
+    return ElementControlMode;
+
+  })();
+
+}).call(this);
+
+(function() {
+  var __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
+
+  this.TextEditMode = (function() {
+    function TextEditMode(maneger) {
+      this._unbindTextEditor = __bind(this._unbindTextEditor, this);
+      this.disable = __bind(this.disable, this);
+      this.onEvent = __bind(this.onEvent, this);
+      this.maneger = maneger;
+      this.text_editor = new SvgTextEditor($("#text-editor-view")[0], void 0);
+      this.text_editor.setOnDisable(this._unbindTextEditor);
+    }
+
+    TextEditMode.prototype.onEvent = function(event, sender, e, options) {
+      if (sender instanceof SvgElementView) {
+        this.cancelEvent(e);
+        if (event === "onClick") {
+          if (sender.model.el instanceof SVGTextElement) {
+            this.text_editor.unbindClickEvent();
+            this.text_editor.setTextElement(sender.model.el);
+            this.text_editor.bindEvent();
+            return this.text_editor.onClickEvent(e);
+          }
+        }
+      } else if (sender instanceof SvgCanvas) {
+        if (event === "onMouseDown") {
+          this.disable();
+          return this.maneger.setMode("control");
+        }
+      }
+    };
+
+    TextEditMode.prototype.disable = function() {
+      return this.text_editor.unbindEvent();
+    };
+
+    TextEditMode.prototype.cancelEvent = function(e) {
+      e.preventDefault();
+      return e.stopPropagation();
+    };
+
+    TextEditMode.prototype._unbindTextEditor = function() {
+      return this.text_editor.unbindClickEvent();
+    };
+
+    return TextEditMode;
+
+  })();
+
+}).call(this);
+
+(function() {
+  var __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
+
+  this.PathEditMode = (function() {
+    function PathEditMode(maneger) {
+      this.onEvent = __bind(this.onEvent, this);
+      this.maneger = maneger;
+    }
+
+    PathEditMode.prototype.onEvent = function(event, sender, e, options) {
+      if (sender instanceof SvgElementView) {
+        if (event === "onClick") {
+          if (sender.model.el instanceof SVGPathElement) {
+            return svgPathControl.setItem(sender.model);
+          }
+        }
+      }
+    };
+
+    PathEditMode.prototype.cancelEvent = function(e) {
+      e.preventDefault();
+      return e.stopPropagation();
+    };
+
+    return PathEditMode;
+
+  })();
+
+}).call(this);
+
+(function() {
+  var __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
+
   this.EventManager = (function() {
     function EventManager() {
       this.setCanvas = __bind(this.setCanvas, this);
-      this._unbindTextEditor = __bind(this._unbindTextEditor, this);
       this.reset = __bind(this.reset, this);
       this.onEvent = __bind(this.onEvent, this);
+      this.getControl = __bind(this.getControl, this);
+      this.setMode = __bind(this.setMode, this);
       this.setControl = __bind(this.setControl, this);
-      this.mode = "control";
+      this.getCanvas = __bind(this.getCanvas, this);
+      _.extend(this, Backbone.Events);
+      this.modes = {
+        "control": new ElementControlMode(this),
+        "text": new TextEditMode(this),
+        "path": new PathEditMode(this)
+      };
+      this.mode = null;
       this.selected_item = null;
+      this.setMode("control");
     }
+
+    EventManager.prototype.getCanvas = function() {
+      return this.canvas;
+    };
 
     EventManager.prototype.setControl = function(control) {
       return this._control = control;
     };
 
-    EventManager.prototype.onEvent = function(event, sender, e, options) {
-      if (sender instanceof SvgElementView) {
-        if (event === "onMouseDown") {
-          this.cancelEvent(e);
-          if (this.mode === "control") {
-            if (e.shiftKey) {
-              if (!this._control.exists(sender.model)) {
-                return this._control.addItem(sender.model);
-              }
-            } else {
-              if (!this._control.exists(sender.model)) {
-                this._control.clear();
-                this._control.addItem(sender.model);
-              }
-              return this._control.getControl().position_control.onMouseDown(e);
-            }
-          } else if (this.mode === "text_edit" && this.selected_item.el && this.selected_item.el !== sender.el) {
-            this.text_editor.disable();
-            this._control.clear();
-            this._control.addItem(sender.model);
-            return this._control.selectedView.position_control.onMouseDown(e);
-          }
-        } else if (event === "onClick" && this.mode === "control") {
-          if (this.selected_item) {
-            if (this.selected_item.el === this._control.firstOriginalItem().el) {
-              if (this.selected_item.el instanceof SVGTextElement) {
-                this.mode = "text_edit";
-                this.text_editor.setTextElement(this.selected_item.el);
-                this.text_editor.bindEvent();
-                return this.cancelEvent(e);
-              } else if (this.selected_item.el instanceof SVGPathElement) {
-                svgPathControl.setItem(this.selected_item);
-                return this._control.hide();
-              }
-            }
-          } else {
-            this.selected_item = this._control.firstOriginalItem();
-            return this.cancelEvent(e);
-          }
-        } else {
-
-        }
+    EventManager.prototype.setMode = function(mode_name) {
+      var _mode;
+      _mode = this.modes[mode_name];
+      if (_mode) {
+        $("#mode-control").val(mode_name);
+        return this.mode = _mode;
       }
     };
 
-    EventManager.prototype.reset = function() {
-      return this._unbindTextEditor();
+    EventManager.prototype.getControl = function() {
+      return this._control;
     };
 
-    EventManager.prototype._unbindTextEditor = function() {
-      this.mode = "control";
-      this.selected_item = null;
-      return this.text_editor.unbindClickEvent();
+    EventManager.prototype.onEvent = function(event, sender, e, options) {
+      return this.mode.onEvent(event, sender, e, options);
     };
+
+    EventManager.prototype.reset = function() {};
 
     EventManager.prototype.setCanvas = function(canvas) {
-      this.text_editor = new SvgTextEditor($("#text-editor-view")[0], void 0);
-      this.text_editor.setOnDisable(this._unbindTextEditor);
       return this.canvas = canvas;
     };
 
@@ -2413,9 +2563,12 @@
         point = SVGUtil.createPoint(e.pageX, e.pageY);
         point = point.matrixTransform(matrix.inverse());
         curve_location = this.curve.getNearestLocation(point);
-        curve_location.divide();
-        this.pathControl.updateItemPath();
-        this.pathControl.createViews();
+        if (e.altKey) {
+          curve_location.split();
+        } else {
+          curve_location.divide();
+        }
+        this.pathControl.refresh();
         return this._cancelEvent(e);
       }
     };
@@ -2816,6 +2969,15 @@
       return _ref;
     }
 
+    SvgSegmentPointControl.prototype.events = function() {
+      return {
+        "mousedown": "onMouseDown",
+        "click": "onClick",
+        "mouseover": "onMouseOver",
+        "mouseleave": "onMouseLeave"
+      };
+    };
+
     SvgSegmentPointControl.prototype.initialize = function() {
       return this._init();
     };
@@ -2864,15 +3026,6 @@
         "width": "12",
         "height": "12"
       });
-    };
-
-    SvgSegmentPointControl.prototype.events = function() {
-      return {
-        "mousedown": "onMouseDown",
-        "click": "onClick",
-        "mouseover": "onMouseOver",
-        "mouseleave": "onMouseLeave"
-      };
     };
 
     SvgSegmentPointControl.prototype.onClick = function(e) {
@@ -3417,18 +3570,20 @@
     __extends(SelectRegionControlView, _super);
 
     function SelectRegionControlView() {
+      this.regionDrop = __bind(this.regionDrop, this);
+      this._getPosition = __bind(this._getPosition, this);
+      this.regionDragging = __bind(this.regionDragging, this);
+      this.startSelectRegion = __bind(this.startSelectRegion, this);
       this.isContainPoint = __bind(this.isContainPoint, this);
-      this.containItems = __bind(this.containItems, this);
-      this.setContainItems = __bind(this.setContainItems, this);
       this.render = __bind(this.render, this);
+      this.show = __bind(this.show, this);
+      this.hide = __bind(this.hide, this);
       this.clear = __bind(this.clear, this);
-      this.clearContainItems = __bind(this.clearContainItems, this);
-      this.setVisible = __bind(this.setVisible, this);
       this._size = __bind(this._size, this);
-      this.setEnd = __bind(this.setEnd, this);
-      this.setStart = __bind(this.setStart, this);
       this._getButtomRightPoint = __bind(this._getButtomRightPoint, this);
       this._getLeftTopPoint = __bind(this._getLeftTopPoint, this);
+      this.setEnd = __bind(this.setEnd, this);
+      this.setStart = __bind(this.setStart, this);
       this._setStyle = __bind(this._setStyle, this);
       this.initialize = __bind(this.initialize, this);
       _ref = SelectRegionControlView.__super__.constructor.apply(this, arguments);
@@ -3436,11 +3591,10 @@
     }
 
     SelectRegionControlView.prototype.initialize = function() {
+      this.canvas = this.options.canvas;
       this.region_el = SVGUtil.createTag('rect');
-      this._setStyle();
       $(this.el).append(this.region_el);
-      this.visible = true;
-      return this._containItems = [];
+      return this._setStyle();
     };
 
     SelectRegionControlView.prototype._setStyle = function() {
@@ -3449,6 +3603,14 @@
       $(this.region_el).attr("stroke-width", "1");
       $(this.region_el).attr("stroke-dasharray", "5");
       return $(this.region_el).attr("stroke-dashoffset", "10");
+    };
+
+    SelectRegionControlView.prototype.setStart = function(pos) {
+      return this.start = pos;
+    };
+
+    SelectRegionControlView.prototype.setEnd = function(pos) {
+      return this.end = pos;
     };
 
     SelectRegionControlView.prototype._getLeftTopPoint = function() {
@@ -3465,14 +3627,6 @@
       };
     };
 
-    SelectRegionControlView.prototype.setStart = function(pos) {
-      return this.start = pos;
-    };
-
-    SelectRegionControlView.prototype.setEnd = function(pos) {
-      return this.end = pos;
-    };
-
     SelectRegionControlView.prototype._size = function(start, end) {
       return {
         width: end.x - start.x,
@@ -3480,49 +3634,33 @@
       };
     };
 
-    SelectRegionControlView.prototype.setVisible = function(state) {
-      return this.visible = state;
-    };
-
-    SelectRegionControlView.prototype.clearContainItems = function() {
-      return this._containItems = [];
-    };
-
     SelectRegionControlView.prototype.clear = function() {
-      this.clearContainItems();
-      this.setVisible(false);
-      return this.render();
+      this.start = null;
+      this.end = null;
+      $(this.region_el).attr("width", 0);
+      $(this.region_el).attr("height", 0);
+      return this.hide();
+    };
+
+    SelectRegionControlView.prototype.hide = function() {
+      return this.$el.attr("display", "none");
+    };
+
+    SelectRegionControlView.prototype.show = function() {
+      return this.$el.attr("display", "");
     };
 
     SelectRegionControlView.prototype.render = function() {
-      var end, size, start;
-      if (this.visible) {
-        $(this.el).attr("display", "");
-      } else {
-        $(this.el).attr("display", "none");
+      var buttom_right, left_top, size;
+      if (!(this.start && this.end)) {
         return;
       }
-      start = this._getLeftTopPoint();
-      end = this._getButtomRightPoint();
-      size = this._size(start, end);
+      left_top = this._getLeftTopPoint();
+      buttom_right = this._getButtomRightPoint();
+      size = this._size(left_top, buttom_right);
       $(this.region_el).attr("width", size.width);
       $(this.region_el).attr("height", size.height);
-      return $(this.el).attr("transform", "translate(" + start.x + ", " + start.y + ")");
-    };
-
-    SelectRegionControlView.prototype.setContainItems = function(items) {
-      var test,
-        _this = this;
-      test = this.region_el;
-      return this._containItems = items.filter(function(item) {
-        return _.any(item.getBBoxPoints(), function(p) {
-          return _this.isContainPoint(p);
-        });
-      });
-    };
-
-    SelectRegionControlView.prototype.containItems = function() {
-      return this._containItems;
+      return $(this.el).attr("transform", "translate(" + left_top.x + ", " + left_top.y + ")");
     };
 
     SelectRegionControlView.prototype.isContainPoint = function(p) {
@@ -3530,6 +3668,36 @@
       start = this._getLeftTopPoint();
       end = this._getButtomRightPoint();
       return (start.x < p.x && p.x < end.x) && (start.y < p.y && p.y < end.y);
+    };
+
+    SelectRegionControlView.prototype.startSelectRegion = function(e) {
+      this.clear();
+      this.show();
+      this.setStart(this._getPosition(e));
+      $(document).mousemove(this.regionDragging);
+      return $(document).mouseup(this.regionDrop);
+    };
+
+    SelectRegionControlView.prototype.regionDragging = function(e) {
+      this.setEnd(this._getPosition(e));
+      return this.render();
+    };
+
+    SelectRegionControlView.prototype._getPosition = function(e) {
+      var offset;
+      offset = $(this.canvas.el).offset();
+      return {
+        x: e.pageX - offset.left,
+        y: e.pageY - offset.top
+      };
+    };
+
+    SelectRegionControlView.prototype.regionDrop = function(e) {
+      $(document).unbind('mousemove', this.regionDragging);
+      $(document).unbind('mouseup', this.regionDrop);
+      this.setEnd(this._getPosition(e));
+      this.trigger("onRegionDrop", this);
+      return this.clear();
     };
 
     return SelectRegionControlView;
@@ -4017,8 +4185,6 @@
 
     function SvgCanvas() {
       this.deleteSelectdItem = __bind(this.deleteSelectdItem, this);
-      this.regionDrop = __bind(this.regionDrop, this);
-      this.regionDragging = __bind(this.regionDragging, this);
       this._getPosition = __bind(this._getPosition, this);
       this._getMovedPosition = __bind(this._getMovedPosition, this);
       this.moveDrop = __bind(this.moveDrop, this);
@@ -4047,7 +4213,6 @@
     };
 
     SvgCanvas.prototype.initialize = function() {
-      this.regionView = this.options.regionView;
       this.mainCanvas = this.options.mainCanvas;
       this.manager = this.options.manager;
       this.control = this.options.control;
@@ -4061,6 +4226,10 @@
       var id;
       id = this.unique_index++;
       return "item-" + id;
+    };
+
+    SvgCanvas.prototype.getItems = function() {
+      return this.item_list;
     };
 
     SvgCanvas.prototype.removeItem = function(item) {
@@ -4205,17 +4374,12 @@
 
     SvgCanvas.prototype.mousedown = function(e) {
       this.pre_position = e;
-      this.regionView.clear();
       this.manager.reset();
       if (e.altKey) {
         $(document).mousemove(this.moveDragging);
-        return $(document).mouseup(this.moveDrop);
-      } else {
-        this.regionView.setStart(this._getPosition(e));
-        this.regionView.setVisible(true);
-        $(document).mousemove(this.regionDragging);
-        return $(document).mouseup(this.regionDrop);
+        $(document).mouseup(this.moveDrop);
       }
+      return this.manager.onEvent("onMouseDown", this, e);
     };
 
     SvgCanvas.prototype.moveDragging = function(e) {
@@ -4254,28 +4418,6 @@
         x: e.pageX - offset.left,
         y: e.pageY - offset.top
       };
-    };
-
-    SvgCanvas.prototype.regionDragging = function(e) {
-      this.regionView.setEnd(this._getPosition(e));
-      return this.regionView.render();
-    };
-
-    SvgCanvas.prototype.regionDrop = function(e) {
-      var _this = this;
-      $(document).unbind('mousemove', this.regionDragging);
-      $(document).unbind('mouseup', this.regionDrop);
-      this.regionView.setEnd(this._getPosition(e));
-      this.regionView.setContainItems(this.item_list.filter(function(item) {
-        return !item.isLocked();
-      }));
-      this.control.clear();
-      if (this.regionView.containItems().length > 0) {
-        this.control.initControls(this.regionView.containItems());
-      }
-      this.trigger("onDrop", this);
-      this.regionView.setVisible(false);
-      return this.regionView.render();
     };
 
     SvgCanvas.prototype.deleteSelectdItem = function() {
@@ -5295,7 +5437,7 @@
   var _this = this;
 
   $(document).ready(function() {
-    var e, i, move, move_item_position, move_keys, option, svg, temp, update_pattern, _fn, _fn1, _i, _j, _k, _len, _len1, _len2, _ref;
+    var e, i, mode, move, move_item_position, move_keys, name, option, svg, temp, update_pattern, _fn, _fn1, _i, _j, _k, _len, _len1, _len2, _ref, _ref1;
     _this.event_manager = new EventManager();
     _this.cloneControlView = new CloneControlView({
       el: $("#clone-control-view"),
@@ -5308,11 +5450,9 @@
       el: $("#svg-canvas-base"),
       control: _this.cloneControlView,
       mainCanvas: $("#svg-canvas")[0],
-      regionView: new SelectRegionControlView({
-        el: $("#select-region-view")
-      }),
       manager: _this.event_manager
     });
+    _this.event_manager.setCanvas(_this.SvgCanvasBase);
     _this.cloneControlView.setCanvas(_this.SvgCanvasBase);
     _this.svgPathControl = new SvgPathControlView({
       el: $("#path-control-panel")
@@ -5330,7 +5470,6 @@
       item_list: SvgCanvasBase.item_list
     });
     $("#inspector-list").append(_this.inspectorListView.el);
-    _this.event_manager.setCanvas(_this.SvgCanvasBase);
     _this.SvgCanvasBase.bind("onZoom", function(e) {
       var canvas_transform;
       canvas_transform = $(_this.SvgCanvasBase.mainCanvas).attr("transform");
@@ -5423,6 +5562,24 @@
         val: i
       }));
     }
+    _ref1 = _this.event_manager.modes;
+    for (name in _ref1) {
+      mode = _ref1[name];
+      temp = _.template('<option value="{{val}}" {{option}}> {{name}}</option>');
+      option = "";
+      if (name === "control") {
+        option = "selected";
+      }
+      $("#mode-control").append(temp({
+        option: option,
+        name: name,
+        val: name
+      }));
+    }
+    $("#mode-control").change(function(e) {
+      mode = $("#mode-control").val();
+      return _this.event_manager.setMode(mode);
+    });
     $("#zoom-control").change(function(e) {
       return SvgCanvasBase.zoom($("#zoom-control").val(), {
         x: 400,
@@ -5432,6 +5589,15 @@
     key("backspace, delete", function(e) {
       e.preventDefault();
       return SvgCanvasBase.deleteSelectdItem();
+    });
+    key("c", function(e) {
+      return $("#mode-control").val("control").trigger('change');
+    });
+    key("t", function(e) {
+      return $("#mode-control").val("text").trigger('change');
+    });
+    key("p", function(e) {
+      return $("#mode-control").val("path").trigger('change');
     });
     move_item_position = function(pos) {
       if (cloneControlView.item_list.length > 0) {
