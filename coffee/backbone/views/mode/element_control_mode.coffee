@@ -4,8 +4,7 @@ class @ElementControlMode
         _.extend @, Backbone.Events
         @maneger = maneger
         @regionView = new SelectRegionControlView({
-            el:$("#select-control-region-view"),
-            canvas:@maneger.canvas
+            el:$("#select-control-region-view")
         })
 
     getControl:() =>

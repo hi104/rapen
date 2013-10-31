@@ -6,9 +6,9 @@ class @PathSegmentAdapeter extends Backbone.Model
 
     init:(segment) =>
         @segment = segment
-        @setSegment(@segment)
+        @_setSegment(@segment)
 
-    setSegment:(segment)=>
+    _setSegment:(segment)=>
         @point = new PathSegmentPointAdapeter()
         @point.init(segment.getPoint())
         @handleInPoint = new PathSegmentPointAdapeter()

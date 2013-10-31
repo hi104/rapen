@@ -51,7 +51,7 @@ class @SvgSegmentPointControl extends Backbone.View
     onClick:(e) =>
 
         if(e.shiftKey)
-            @segment.setSelected(not @segment.isSelected())
+            @setSelected(not @segment.isSelected())
 
         if(e.altKey)
             if(e.shiftKey)
@@ -59,6 +59,9 @@ class @SvgSegmentPointControl extends Backbone.View
                 @pathControl.refresh()
             else
                 @segment.setLinear()
+
+    setSelected:(val) =>
+            @segment.setSelected(val)
 
     onMouseDown:(e) =>
         @pre_position = e
@@ -122,11 +125,14 @@ class @SvgSegmentPointControl extends Backbone.View
         $(document).unbind('mousemove', @onMouseMoveHandle)
         $(document).unbind('mouseup', @onMouseDropHandle)
 
-    render:() =>
-        # seg = @segment
+    getPointAtCanvas:() =>
         point = @getPoint()
         seg_point = SVGUtil.createPoint(point.getX(), point.getY())
-        point = seg_point.matrixTransform(@item.getCTM())
+        seg_point.matrixTransform(@item.getCTM())
+
+    render:() =>
+
+        point = @getPointAtCanvas()
 
         if @segment.isSelected()
             @$el.attr({"fill":"blue"})

@@ -16,9 +16,13 @@ class @SvgPathControlView extends Backbone.View
         @_control_views = []
         @_segments = []
 
+    getSegmentControls:() =>
+        _(@_control_views).filter((view) =>
+            view.constructor == SvgSegmentPointControl
+        )
+
     createViews:() =>
         @clearView()
-        @_segments = []
 
         for child in @path._children
             controls = []
@@ -117,6 +121,7 @@ class @SvgPathControlView extends Backbone.View
     clearView:() =>
         @_control_views.forEach((e) => e.remove())
         @_control_views = []
+        @_segments = []
         @clear()
 
     render:() =>
@@ -133,10 +138,14 @@ class @SvgPathControlView extends Backbone.View
         @createViews()
 
     unbindItem:() =>
+        @item = null
         @stopListening()
         @clearView()
 
+    isSelected:() => @item
+
     setItem:(item) =>
+        @unbindItem()
         @item = item
         @path.setPathData($(@item.el).attr("d"))
         @listenTo(item, "change:matrix", @render)

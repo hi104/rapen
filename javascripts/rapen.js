@@ -351,7 +351,7 @@
       this.getPoint = __bind(this.getPoint, this);
       this.getHandleIn = __bind(this.getHandleIn, this);
       this.getHandleOut = __bind(this.getHandleOut, this);
-      this.setSegment = __bind(this.setSegment, this);
+      this._setSegment = __bind(this._setSegment, this);
       this.init = __bind(this.init, this);
       _ref = PathSegmentAdapeter.__super__.constructor.apply(this, arguments);
       return _ref;
@@ -359,10 +359,10 @@
 
     PathSegmentAdapeter.prototype.init = function(segment) {
       this.segment = segment;
-      return this.setSegment(this.segment);
+      return this._setSegment(this.segment);
     };
 
-    PathSegmentAdapeter.prototype.setSegment = function(segment) {
+    PathSegmentAdapeter.prototype._setSegment = function(segment) {
       var p, _i, _len, _ref1, _results;
       this.point = new PathSegmentPointAdapeter();
       this.point.init(segment.getPoint());
@@ -2122,8 +2122,7 @@
       _.extend(this, Backbone.Events);
       this.maneger = maneger;
       this.regionView = new SelectRegionControlView({
-        el: $("#select-control-region-view"),
-        canvas: this.maneger.canvas
+        el: $("#select-control-region-view")
       });
     }
 
@@ -2258,8 +2257,14 @@
 
   this.PathEditMode = (function() {
     function PathEditMode(maneger) {
+      this.disable = __bind(this.disable, this);
+      this._onRegionDrop = __bind(this._onRegionDrop, this);
       this.onEvent = __bind(this.onEvent, this);
+      _.extend(this, Backbone.Events);
       this.maneger = maneger;
+      this.regionView = new SelectRegionControlView({
+        el: $("#select-path-region-view")
+      });
     }
 
     PathEditMode.prototype.onEvent = function(event, sender, e, options) {
@@ -2269,7 +2274,32 @@
             return svgPathControl.setItem(sender.model);
           }
         }
+      } else if (sender instanceof SvgCanvas) {
+        if (event === "onMouseDown" && !e.altKey) {
+          this.regionView.canvas = this.maneger.getCanvas();
+          this.listenToOnce(this.regionView, "onRegionDrop", this._onRegionDrop);
+          return this.regionView.startSelectRegion(e);
+        }
       }
+    };
+
+    PathEditMode.prototype._onRegionDrop = function(region, e) {
+      var _this = this;
+      return _(svgPathControl.getSegmentControls()).forEach(function(segment) {
+        var is_contain;
+        is_contain = region.isContainPoint(segment.getPointAtCanvas());
+        if (e.shiftKey) {
+          if (is_contain) {
+            return segment.setSelected(true);
+          }
+        } else {
+          return segment.setSelected(is_contain);
+        }
+      });
+    };
+
+    PathEditMode.prototype.disable = function() {
+      return svgPathControl.unbindItem();
     };
 
     PathEditMode.prototype.cancelEvent = function(e) {
@@ -2669,6 +2699,7 @@
       this.createRect = __bind(this.createRect, this);
       this.createPoint = __bind(this.createPoint, this);
       this.setItem = __bind(this.setItem, this);
+      this.isSelected = __bind(this.isSelected, this);
       this.unbindItem = __bind(this.unbindItem, this);
       this.refresh = __bind(this.refresh, this);
       this.updateItemPath = __bind(this.updateItemPath, this);
@@ -2679,6 +2710,7 @@
       this.savePoint = __bind(this.savePoint, this);
       this._setupControlView = __bind(this._setupControlView, this);
       this.createViews = __bind(this.createViews, this);
+      this.getSegmentControls = __bind(this.getSegmentControls, this);
       this.initialize = __bind(this.initialize, this);
       _ref = SvgPathControlView.__super__.constructor.apply(this, arguments);
       return _ref;
@@ -2702,11 +2734,17 @@
       return this._segments = [];
     };
 
+    SvgPathControlView.prototype.getSegmentControls = function() {
+      var _this = this;
+      return _(this._control_views).filter(function(view) {
+        return view.constructor === SvgSegmentPointControl;
+      });
+    };
+
     SvgPathControlView.prototype.createViews = function() {
       var child, control, control_view, controls, last_control, seg, _fn, _i, _j, _k, _len, _len1, _len2, _ref1, _ref2, _ref3,
         _this = this;
       this.clearView();
-      this._segments = [];
       _ref1 = this.path._children;
       for (_i = 0, _len = _ref1.length; _i < _len; _i++) {
         child = _ref1[_i];
@@ -2868,6 +2906,7 @@
         return e.remove();
       });
       this._control_views = [];
+      this._segments = [];
       return this.clear();
     };
 
@@ -2892,11 +2931,17 @@
     };
 
     SvgPathControlView.prototype.unbindItem = function() {
+      this.item = null;
       this.stopListening();
       return this.clearView();
     };
 
+    SvgPathControlView.prototype.isSelected = function() {
+      return this.item;
+    };
+
     SvgPathControlView.prototype.setItem = function(item) {
+      this.unbindItem();
       this.item = item;
       this.path.setPathData($(this.item.el).attr("d"));
       this.listenTo(item, "change:matrix", this.render);
@@ -2950,6 +2995,7 @@
       this.remove = __bind(this.remove, this);
       this.renderHandleLine = __bind(this.renderHandleLine, this);
       this.render = __bind(this.render, this);
+      this.getPointAtCanvas = __bind(this.getPointAtCanvas, this);
       this.onMouseDropHandle = __bind(this.onMouseDropHandle, this);
       this.onMouseDrop = __bind(this.onMouseDrop, this);
       this._getMovedPosition = __bind(this._getMovedPosition, this);
@@ -2957,6 +3003,7 @@
       this.onMouseMoveHandle = __bind(this.onMouseMoveHandle, this);
       this._itemMatrixPos = __bind(this._itemMatrixPos, this);
       this.onMouseDown = __bind(this.onMouseDown, this);
+      this.setSelected = __bind(this.setSelected, this);
       this.onClick = __bind(this.onClick, this);
       this.setStyle = __bind(this.setStyle, this);
       this.onMouseLeave = __bind(this.onMouseLeave, this);
@@ -3030,7 +3077,7 @@
 
     SvgSegmentPointControl.prototype.onClick = function(e) {
       if (e.shiftKey) {
-        this.segment.setSelected(!this.segment.isSelected());
+        this.setSelected(!this.segment.isSelected());
       }
       if (e.altKey) {
         if (e.shiftKey) {
@@ -3040,6 +3087,10 @@
           return this.segment.setLinear();
         }
       }
+    };
+
+    SvgSegmentPointControl.prototype.setSelected = function(val) {
+      return this.segment.setSelected(val);
     };
 
     SvgSegmentPointControl.prototype.onMouseDown = function(e) {
@@ -3121,11 +3172,16 @@
       return $(document).unbind('mouseup', this.onMouseDropHandle);
     };
 
-    SvgSegmentPointControl.prototype.render = function() {
+    SvgSegmentPointControl.prototype.getPointAtCanvas = function() {
       var point, seg_point;
       point = this.getPoint();
       seg_point = SVGUtil.createPoint(point.getX(), point.getY());
-      point = seg_point.matrixTransform(this.item.getCTM());
+      return seg_point.matrixTransform(this.item.getCTM());
+    };
+
+    SvgSegmentPointControl.prototype.render = function() {
+      var point;
+      point = this.getPointAtCanvas();
       if (this.segment.isSelected()) {
         this.$el.attr({
           "fill": "blue"
@@ -3696,7 +3752,7 @@
       $(document).unbind('mousemove', this.regionDragging);
       $(document).unbind('mouseup', this.regionDrop);
       this.setEnd(this._getPosition(e));
-      this.trigger("onRegionDrop", this);
+      this.trigger("onRegionDrop", this, e);
       return this.clear();
     };
 

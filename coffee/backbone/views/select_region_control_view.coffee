@@ -75,5 +75,5 @@ class @SelectRegionControlView extends Backbone.View
         $(document).unbind('mousemove', @regionDragging)
         $(document).unbind('mouseup', @regionDrop)
         @setEnd(@_getPosition(e))
-        @trigger("onRegionDrop", @)
+        @trigger("onRegionDrop", @, e)
         @clear()
