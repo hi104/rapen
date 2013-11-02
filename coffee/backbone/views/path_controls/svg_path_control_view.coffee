@@ -1,7 +1,7 @@
 class @SvgPathControlView extends Backbone.View
 
     initialize:()=>
-        container = document.getElementById('container')
+        container = document.getElementById('paper-js-container')
         canvas = document.createElement('canvas')
         $(canvas).hide()
         container.appendChild(canvas)
