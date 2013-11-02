@@ -151,8 +151,7 @@ class @CloneControlView extends Backbone.View
             @item_list.remove(@item_list.first())
 
     render:() =>
-        # @$el.show();
-        @$el.attr("opacity", 0)
+        @$el.show();
         @itemControl.visible = true
         @itemControl.render()
         @line_list_view.render()
@@ -191,7 +190,6 @@ class @CloneControlView extends Backbone.View
 
     _copyMode:(sender, e) =>
 
-        @$el.show()
         @line_list_view.$el.show()
         @line_list_view.render()
         @itemControl.clear()
@@ -210,6 +208,7 @@ class @CloneControlView extends Backbone.View
 
     attachCopyDragEvent:(sender, e) =>
         @mode = "copy"
+        @$el.show()
         @$el.attr("opacity", 0.5) #for copy object visible
         $(document).mousemove(sender.onDragging)
         ondrop = (e) =>
@@ -217,8 +216,8 @@ class @CloneControlView extends Backbone.View
             sender.onDrop(e) if sender.onDrop
             $(document).unbind('mousemove', sender.onDragging)
             $(document).unbind('mouseup', ondrop)
+            @$el.attr("opacity", 0)
             @initControls(@_copyItems())
-            # @clear()
             @cancelEvent(e)
         $(document).mouseup(ondrop)
 

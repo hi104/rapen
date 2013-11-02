@@ -749,7 +749,7 @@
     };
 
     CloneControlView.prototype.render = function() {
-      this.$el.attr("opacity", 0);
+      this.$el.show();
       this.itemControl.visible = true;
       this.itemControl.render();
       return this.line_list_view.render();
@@ -796,7 +796,6 @@
     };
 
     CloneControlView.prototype._copyMode = function(sender, e) {
-      this.$el.show();
       this.line_list_view.$el.show();
       this.line_list_view.render();
       this.itemControl.clear();
@@ -818,6 +817,7 @@
       var ondrop,
         _this = this;
       this.mode = "copy";
+      this.$el.show();
       this.$el.attr("opacity", 0.5);
       $(document).mousemove(sender.onDragging);
       ondrop = function(e) {
@@ -827,6 +827,7 @@
         }
         $(document).unbind('mousemove', sender.onDragging);
         $(document).unbind('mouseup', ondrop);
+        _this.$el.attr("opacity", 0);
         _this.initControls(_this._copyItems());
         return _this.cancelEvent(e);
       };
@@ -2743,7 +2744,7 @@
 
     SvgPathControlView.prototype.initialize = function() {
       var canvas, container;
-      container = document.getElementById('container');
+      container = document.getElementById('paper-js-container');
       canvas = document.createElement('canvas');
       $(canvas).hide();
       container.appendChild(canvas);
