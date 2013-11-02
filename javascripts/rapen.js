@@ -61,6 +61,9 @@
     __extends(SvgElement, _super);
 
     function SvgElement() {
+      this.flipY = __bind(this.flipY, this);
+      this.flipX = __bind(this.flipX, this);
+      this.centerScale = __bind(this.centerScale, this);
       this.move = __bind(this.move, this);
       this.getPosition = __bind(this.getPosition, this);
       this._getPosition = __bind(this._getPosition, this);
@@ -262,6 +265,30 @@
       matrix_inverse.f = 0;
       point = point.matrixTransform(matrix_inverse);
       return this.setMatrix(this.getLocalMatrix().translate(point.x, point.y));
+    };
+
+    SvgElement.prototype.centerScale = function(x_scale, y_scale) {
+      var bbox, box_height, box_width, matrix, move_bbox_height, move_bbox_width, move_bbox_x, move_bbox_y, move_x, move_y;
+      matrix = this.getLocalMatrix();
+      bbox = this.getBBox();
+      box_width = bbox.width;
+      box_height = bbox.height;
+      move_bbox_x = (bbox.x * x_scale) - bbox.x;
+      move_bbox_y = (bbox.y * y_scale) - bbox.y;
+      move_bbox_width = (box_width * x_scale) - box_width;
+      move_bbox_height = (box_height * y_scale) - box_height;
+      move_y = move_bbox_height / 2 + move_bbox_y;
+      move_x = move_bbox_width / 2 + move_bbox_x;
+      matrix = matrix.translate(-move_x, -move_y);
+      return this.setMatrix(matrix.scaleNonUniform(x_scale, y_scale));
+    };
+
+    SvgElement.prototype.flipX = function() {
+      return this.centerScale(-1, 1);
+    };
+
+    SvgElement.prototype.flipY = function() {
+      return this.centerScale(1, -1);
     };
 
     return SvgElement;
@@ -632,16 +659,15 @@
     CloneControlView.prototype.update = function() {
       var matrix,
         _this = this;
+      if (this.mode === "copy") {
+        return;
+      }
       matrix = this.item.getLocalMatrix();
       this.item_list.each(function(item) {
         var local, origin_model;
         origin_model = item.get("origin_model");
         local = item.getLocalMatrix();
-        if (_this.mode === "copy") {
-          return origin_model.setMatrix(local);
-        } else {
-          return origin_model.setMatrix(matrix.multiply(local));
-        }
+        return origin_model.setMatrix(matrix.multiply(local));
       });
       return this.line_list_view.render();
     };
@@ -723,7 +749,6 @@
     };
 
     CloneControlView.prototype.render = function() {
-      console.log("clone-control-view render");
       this.$el.attr("opacity", 0);
       this.itemControl.visible = true;
       this.itemControl.render();
@@ -5738,6 +5763,18 @@
     $.contextMenu({
       selector: "#svg-canvas-base",
       items: {
+        flipX: {
+          name: "flipX",
+          callback: (function(key, opt) {
+            return cloneControlView.getControlItem().flipX();
+          })
+        },
+        flipY: {
+          name: "flipY",
+          callback: (function(key, opt) {
+            return cloneControlView.getControlItem().flipY();
+          })
+        },
         forward: {
           name: "forward",
           callback: (function(key, opt) {

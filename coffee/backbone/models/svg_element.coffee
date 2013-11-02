@@ -124,3 +124,31 @@ class @SvgElement extends Backbone.Model
         matrix_inverse.f = 0
         point = point.matrixTransform(matrix_inverse)
         @setMatrix(@getLocalMatrix().translate(point.x, point.y))
+
+    #copy from scale control center scale
+    centerScale:(x_scale, y_scale) =>
+
+        matrix = @getLocalMatrix()
+        bbox = @getBBox()
+
+        box_width = bbox.width
+        box_height =  bbox.height
+
+        move_bbox_x = (bbox.x * x_scale) - bbox.x
+        move_bbox_y = (bbox.y * y_scale) - bbox.y
+
+        move_bbox_width = (box_width * x_scale) - box_width
+        move_bbox_height = (box_height * y_scale) - box_height
+
+        move_y = move_bbox_height/2 + move_bbox_y
+        move_x = move_bbox_width/2 + move_bbox_x
+
+        matrix = matrix.translate(-move_x, -move_y)
+
+        @setMatrix(matrix.scaleNonUniform(x_scale, y_scale))
+
+    flipX:() =>
+        @centerScale(-1, 1)
+
+    flipY:() =>
+        @centerScale(1, -1)

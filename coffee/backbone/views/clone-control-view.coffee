@@ -91,14 +91,12 @@ class @CloneControlView extends Backbone.View
         el.remove()
 
     update:() =>
+        return if @mode == "copy"
         matrix = @item.getLocalMatrix()
         @item_list.each((item) =>
             origin_model = item.get("origin_model")
             local = item.getLocalMatrix()
-            if @mode == "copy"
-                origin_model.setMatrix(local)
-            else
-                origin_model.setMatrix(matrix.multiply(local))
+            origin_model.setMatrix(matrix.multiply(local))
         )
         @line_list_view.render()
 
@@ -153,7 +151,6 @@ class @CloneControlView extends Backbone.View
             @item_list.remove(@item_list.first())
 
     render:() =>
-        console.log("clone-control-view render")
         # @$el.show();
         @$el.attr("opacity", 0)
         @itemControl.visible = true
