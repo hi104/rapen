@@ -122,13 +122,13 @@ class @SvgPathControlView extends Backbone.View
         @_control_views.forEach((e) => e.remove())
         @_control_views = []
         @_segments = []
-        @clear()
+        @$el.empty()
 
     render:() =>
         @_control_views.forEach((view) => view.render())
 
     clear:() =>
-        @$el.empty()
+        @unbindItem()
 
     updateItemPath:() =>
         @item.attr("d", @path.getPathData())

@@ -50,7 +50,10 @@ class @ElementControlMode
 
         else if event == "onClick"
                 @cancelEvent(e)
+    onStart:() =>
 
+    onStop:() =>
+        @getControl().clear()
 
     cancelEvent:(e)->
         e.preventDefault()

@@ -3,7 +3,6 @@ class @TextEditMode
     constructor:(maneger)->
         @maneger = maneger
         @text_editor = new SvgTextEditor($("#text-editor-view")[0], undefined)
-        @text_editor.setOnDisable(@_unbindTextEditor);
 
     onEvent:(event, sender, e, options) =>
         if sender instanceof SvgElementView
@@ -19,9 +18,13 @@ class @TextEditMode
                 @disable()
                 @maneger.setMode("control")
 
+    onStart:() =>
+
+    onStop:() => @disable()
 
     disable:()=>
         @text_editor.unbindEvent()
+        @text_editor.unbindClickEvent()
 
     cancelEvent:(e)->
         e.preventDefault()

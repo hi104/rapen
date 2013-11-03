@@ -29,8 +29,12 @@ class @PathEditMode
                 segment.setSelected(is_contain)
         )
 
+    onStart:() =>
+
+    onStop:() => @disable()
+
     disable:()=>
-        svgPathControl.unbindItem()
+        svgPathControl.clear()
 
     cancelEvent:(e)->
         e.preventDefault()

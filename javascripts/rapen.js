@@ -749,7 +749,6 @@
     };
 
     CloneControlView.prototype.render = function() {
-      this.$el.show();
       this.itemControl.visible = true;
       this.itemControl.render();
       return this.line_list_view.render();
@@ -2139,6 +2138,8 @@
 
   this.ElementControlMode = (function() {
     function ElementControlMode(maneger) {
+      this.onStop = __bind(this.onStop, this);
+      this.onStart = __bind(this.onStart, this);
       this._onSvgElementView = __bind(this._onSvgElementView, this);
       this._getRegionContainItems = __bind(this._getRegionContainItems, this);
       this._onRegionDrop = __bind(this._onRegionDrop, this);
@@ -2216,6 +2217,12 @@
       }
     };
 
+    ElementControlMode.prototype.onStart = function() {};
+
+    ElementControlMode.prototype.onStop = function() {
+      return this.getControl().clear();
+    };
+
     ElementControlMode.prototype.cancelEvent = function(e) {
       e.preventDefault();
       return e.stopPropagation();
@@ -2234,10 +2241,11 @@
     function TextEditMode(maneger) {
       this._unbindTextEditor = __bind(this._unbindTextEditor, this);
       this.disable = __bind(this.disable, this);
+      this.onStop = __bind(this.onStop, this);
+      this.onStart = __bind(this.onStart, this);
       this.onEvent = __bind(this.onEvent, this);
       this.maneger = maneger;
       this.text_editor = new SvgTextEditor($("#text-editor-view")[0], void 0);
-      this.text_editor.setOnDisable(this._unbindTextEditor);
     }
 
     TextEditMode.prototype.onEvent = function(event, sender, e, options) {
@@ -2259,8 +2267,15 @@
       }
     };
 
+    TextEditMode.prototype.onStart = function() {};
+
+    TextEditMode.prototype.onStop = function() {
+      return this.disable();
+    };
+
     TextEditMode.prototype.disable = function() {
-      return this.text_editor.unbindEvent();
+      this.text_editor.unbindEvent();
+      return this.text_editor.unbindClickEvent();
     };
 
     TextEditMode.prototype.cancelEvent = function(e) {
@@ -2284,6 +2299,8 @@
   this.PathEditMode = (function() {
     function PathEditMode(maneger) {
       this.disable = __bind(this.disable, this);
+      this.onStop = __bind(this.onStop, this);
+      this.onStart = __bind(this.onStart, this);
       this._onRegionDrop = __bind(this._onRegionDrop, this);
       this.onEvent = __bind(this.onEvent, this);
       _.extend(this, Backbone.Events);
@@ -2324,8 +2341,14 @@
       });
     };
 
+    PathEditMode.prototype.onStart = function() {};
+
+    PathEditMode.prototype.onStop = function() {
+      return this.disable();
+    };
+
     PathEditMode.prototype.disable = function() {
-      return svgPathControl.unbindItem();
+      return svgPathControl.clear();
     };
 
     PathEditMode.prototype.cancelEvent = function(e) {
@@ -2340,26 +2363,93 @@
 }).call(this);
 
 (function() {
+  var _ref,
+    __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; },
+    __hasProp = {}.hasOwnProperty,
+    __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
+
+  this.ModeView = (function(_super) {
+    __extends(ModeView, _super);
+
+    function ModeView() {
+      this.render = __bind(this.render, this);
+      this._onModeChange = __bind(this._onModeChange, this);
+      this.onClick = __bind(this.onClick, this);
+      this.initialize = __bind(this.initialize, this);
+      _ref = ModeView.__super__.constructor.apply(this, arguments);
+      return _ref;
+    }
+
+    ModeView.prototype.events = {
+      "click svg": "onClick"
+    };
+
+    ModeView.prototype.initialize = function() {
+      this.manager = this.options.manager;
+      return this.listenTo(this.manager, "onModeChange", this._onModeChange);
+    };
+
+    ModeView.prototype.onClick = function(e) {
+      var mode;
+      mode = $(e.currentTarget).data("mode");
+      return this.manager.setMode(mode);
+    };
+
+    ModeView.prototype._onModeChange = function(mode) {
+      return this.render();
+    };
+
+    ModeView.prototype.render = function() {
+      var btns, mode,
+        _this = this;
+      if (!this.manager.current_mode) {
+        return;
+      }
+      mode = this.manager.current_mode.name;
+      btns = this.$el.find("svg").get();
+      return btns.forEach(function(svg) {
+        var $svg, color;
+        $svg = $(svg);
+        if ($svg.data("mode") === mode) {
+          color = "blue";
+        } else {
+          color = "black";
+        }
+        return $svg.find("g").attr("fill", color);
+      });
+    };
+
+    return ModeView;
+
+  })(Backbone.View);
+
+}).call(this);
+
+(function() {
   var __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
 
   this.EventManager = (function() {
     function EventManager() {
       this.setCanvas = __bind(this.setCanvas, this);
-      this.reset = __bind(this.reset, this);
       this.onEvent = __bind(this.onEvent, this);
       this.getControl = __bind(this.getControl, this);
       this.setMode = __bind(this.setMode, this);
       this.setControl = __bind(this.setControl, this);
       this.getCanvas = __bind(this.getCanvas, this);
+      var mode, name, _ref;
       _.extend(this, Backbone.Events);
       this.modes = {
         "control": new ElementControlMode(this),
         "text": new TextEditMode(this),
         "path": new PathEditMode(this)
       };
-      this.mode = null;
+      _ref = this.modes;
+      for (name in _ref) {
+        mode = _ref[name];
+        mode.name = name;
+      }
+      this.current_mode = null;
       this.selected_item = null;
-      this.setMode("control");
     }
 
     EventManager.prototype.getCanvas = function() {
@@ -2371,11 +2461,20 @@
     };
 
     EventManager.prototype.setMode = function(mode_name) {
-      var _mode;
-      _mode = this.modes[mode_name];
-      if (_mode) {
-        $("#mode-control").val(mode_name);
-        return this.mode = _mode;
+      var mode, pre_mode;
+      mode = this.modes[mode_name];
+      if (mode && this.current_mode !== mode) {
+        pre_mode = this.current_mode;
+        this.current_mode = mode;
+        if (this.current_mode.onStart) {
+          this.current_mode.onStart();
+        }
+        if (pre_mode) {
+          if (pre_mode.onStop) {
+            pre_mode.onStop();
+          }
+        }
+        return this.trigger("onModeChange", mode_name);
       }
     };
 
@@ -2384,10 +2483,8 @@
     };
 
     EventManager.prototype.onEvent = function(event, sender, e, options) {
-      return this.mode.onEvent(event, sender, e, options);
+      return this.current_mode.onEvent(event, sender, e, options);
     };
-
-    EventManager.prototype.reset = function() {};
 
     EventManager.prototype.setCanvas = function(canvas) {
       return this.canvas = canvas;
@@ -2933,7 +3030,7 @@
       });
       this._control_views = [];
       this._segments = [];
-      return this.clear();
+      return this.$el.empty();
     };
 
     SvgPathControlView.prototype.render = function() {
@@ -2944,7 +3041,7 @@
     };
 
     SvgPathControlView.prototype.clear = function() {
-      return this.$el.empty();
+      return this.unbindItem();
     };
 
     SvgPathControlView.prototype.updateItemPath = function() {
@@ -4455,9 +4552,8 @@
     };
 
     SvgCanvas.prototype.mousedown = function(e) {
-      this.pre_position = e;
-      this.manager.reset();
       if (e.altKey) {
+        this.pre_position = e;
         $(document).mousemove(this.moveDragging);
         $(document).mouseup(this.moveDrop);
       }
@@ -5519,7 +5615,7 @@
   var _this = this;
 
   $(document).ready(function() {
-    var e, i, mode, move, move_item_position, move_keys, name, option, svg, temp, update_pattern, _fn, _fn1, _i, _j, _k, _len, _len1, _len2, _ref, _ref1;
+    var e, i, mode_view, move, move_item_position, move_keys, option, svg, temp, update_pattern, _fn, _fn1, _i, _j, _k, _len, _len1, _len2, _ref;
     _this.event_manager = new EventManager();
     _this.cloneControlView = new CloneControlView({
       el: $("#clone-control-view"),
@@ -5539,14 +5635,7 @@
     _this.svgPathControl = new SvgPathControlView({
       el: $("#path-control-panel")
     });
-    cloneControlView.bind("onChangeList", function(control) {
-      if (cloneControlView.isOneItem()) {
-        _this.event_manager.selected_item = null;
-      }
-      if (!cloneControlView.isOneItem()) {
-        return svgPathControl.unbindItem();
-      }
-    });
+    cloneControlView.bind("onChangeList", function(control) {});
     _this.inspectorListView = new InspectorListView({
       control: _this.cloneControlView,
       item_list: SvgCanvasBase.item_list
@@ -5627,6 +5716,12 @@
       e.preventDefault();
       return $(this).tab('show');
     });
+    event_manager.setMode('control');
+    mode_view = new ModeView({
+      el: $("#mode-btn-group"),
+      manager: event_manager
+    });
+    mode_view.render();
     _ref = _.map(_.range(1, 30), function(e) {
       return 0.1 * e;
     });
@@ -5644,24 +5739,6 @@
         val: i
       }));
     }
-    _ref1 = _this.event_manager.modes;
-    for (name in _ref1) {
-      mode = _ref1[name];
-      temp = _.template('<option value="{{val}}" {{option}}> {{name}}</option>');
-      option = "";
-      if (name === "control") {
-        option = "selected";
-      }
-      $("#mode-control").append(temp({
-        option: option,
-        name: name,
-        val: name
-      }));
-    }
-    $("#mode-control").change(function(e) {
-      mode = $("#mode-control").val();
-      return _this.event_manager.setMode(mode);
-    });
     $("#zoom-control").change(function(e) {
       return SvgCanvasBase.zoom($("#zoom-control").val(), {
         x: 400,
@@ -5673,13 +5750,13 @@
       return SvgCanvasBase.deleteSelectdItem();
     });
     key("c", function(e) {
-      return $("#mode-control").val("control").trigger('change');
+      return event_manager.setMode('control');
     });
     key("t", function(e) {
-      return $("#mode-control").val("text").trigger('change');
+      return event_manager.setMode('text');
     });
     key("p", function(e) {
-      return $("#mode-control").val("path").trigger('change');
+      return event_manager.setMode('path');
     });
     move_item_position = function(pos) {
       if (cloneControlView.item_list.length > 0) {

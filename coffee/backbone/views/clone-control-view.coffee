@@ -151,7 +151,7 @@ class @CloneControlView extends Backbone.View
             @item_list.remove(@item_list.first())
 
     render:() =>
-        @$el.show();
+        # @$el.show()
         @itemControl.visible = true
         @itemControl.render()
         @line_list_view.render()

@@ -9,9 +9,11 @@ class @EventManager
             "path" : new PathEditMode(@)
         }
 
-        @mode = null
+        for name, mode of @modes
+            mode.name = name
+
+        @current_mode = null
         @selected_item = null
-        @setMode("control")
 
     getCanvas:() => @canvas
 
@@ -19,18 +21,21 @@ class @EventManager
         @_control = control
 
     setMode:(mode_name) =>
-        _mode = @modes[mode_name]
-        if _mode
-            $("#mode-control").val(mode_name)
-            @mode = _mode
+        mode = @modes[mode_name]
+        if mode and @current_mode != mode
+            pre_mode = @current_mode
+            @current_mode = mode
+            @current_mode.onStart() if  @current_mode.onStart
+            if pre_mode
+                pre_mode.onStop() if  pre_mode.onStop
+
+            @trigger("onModeChange", mode_name)
 
     getControl:() =>
         @_control
 
     onEvent:(event, sender, e, options) =>
-        @mode.onEvent(event, sender, e, options)
-
-    reset:() =>
+        @current_mode.onEvent(event, sender, e, options)
 
     #call when init
     setCanvas:(canvas) =>

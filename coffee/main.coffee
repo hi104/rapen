@@ -23,10 +23,10 @@ $(document).ready(() =>
 
     @svgPathControl = new SvgPathControlView(el:$("#path-control-panel"))
     cloneControlView.bind("onChangeList", (control) =>
-        if cloneControlView.isOneItem()
-            @event_manager.selected_item = null
-        if not cloneControlView.isOneItem()
-            svgPathControl.unbindItem()
+        # if cloneControlView.isOneItem()
+        #     @event_manager.selected_item = null
+        # if not cloneControlView.isOneItem()
+        #     svgPathControl.unbindItem()
     )
 
     @inspectorListView = new InspectorListView({
@@ -94,9 +94,13 @@ $(document).ready(() =>
     @snap_item_view =  new SnapItemView(el:$("#snap-item-view"))
 
     $('#panel-tabs a').click((e)->
-      e.preventDefault();
-      $(this).tab('show');
+        e.preventDefault()
+        $(this).tab('show')
     )
+
+    event_manager.setMode('control')
+    mode_view = new ModeView(el:$("#mode-btn-group"), manager:event_manager)
+    mode_view.render()
 
     for i in _.map(_.range(1, 30), (e) -> 0.1 * e )
         temp = _.template('<option value="{{val}}" {{option}}> {{name}}</option>')
@@ -105,18 +109,6 @@ $(document).ready(() =>
         if(e == 100)
              option = "selected"
         $("#zoom-control").append temp(option:option, name: e + "%", val: i)
-
-    for name, mode of @event_manager.modes
-        temp = _.template('<option value="{{val}}" {{option}}> {{name}}</option>')
-        option = ""
-        if(name == "control")
-             option = "selected"
-        $("#mode-control").append temp(option:option, name: name, val: name)
-
-    $("#mode-control").change((e) =>
-        mode = $("#mode-control").val()
-        @event_manager.setMode(mode)
-    )
 
     $("#zoom-control").change((e) =>
         SvgCanvasBase.zoom($("#zoom-control").val(), { x: 400, y:300}, false)
@@ -128,15 +120,15 @@ $(document).ready(() =>
     )
 
     key("c", (e) =>
-        $("#mode-control").val("control").trigger('change')
+        event_manager.setMode('control')
     )
 
     key("t", (e) =>
-        $("#mode-control").val("text").trigger('change')
+        event_manager.setMode('text')
     )
 
     key("p", (e) =>
-        $("#mode-control").val("path").trigger('change')
+        event_manager.setMode('path')
     )
 
     move_item_position = (pos) =>

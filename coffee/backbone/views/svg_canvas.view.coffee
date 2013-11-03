@@ -123,11 +123,8 @@ class @SvgCanvas extends Backbone.View
         @addElement(group_el)
 
     mousedown: (e) =>
-
-        @pre_position = e
-        @manager.reset()
-
         if(e.altKey)
+            @pre_position = e
             $(document).mousemove(@moveDragging)
             $(document).mouseup(@moveDrop)
         @manager.onEvent("onMouseDown", @, e)
