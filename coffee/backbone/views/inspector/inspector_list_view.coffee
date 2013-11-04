@@ -3,7 +3,7 @@ class @InspectorListView extends Backbone.View
     tagName:  "ul"
 
     initialize:() =>
-        @$el.attr("class", "unstyled")
+        @$el.attr("class", "list-unstyled")
         @item_list = @options.item_list
         @control = @options.control
         @listenTo(@item_list, "add", @addItem)

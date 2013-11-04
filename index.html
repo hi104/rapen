@@ -27,13 +27,44 @@
   </head>
   <body>
     <div class="" style="height:100%;width:100%;">
-      <div class="" style="padding:5px;border-bottom:1px solid #ccc;">
-        <div class="btn btn-primary" id="export-button">
-          export
+      <div class="btn-toolbar" style="padding:5px;border-bottom:1px solid #ccc;">
+        <div class="btn-group">
+          <div class="btn-group">
+
+            <button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown">
+              Menu
+              <span class="caret"></span>
+            </button>
+            <ul class="dropdown-menu">
+              <li><a id="export-button" href="#">
+                  <span class="glyphicon glyphicon-export"></span>
+                  Export
+                </a>
+              </li>
+              <!-- <li><a id="open-button" href="#"> -->
+              <!--     <span class="glyphicon glyphicon-open"></span> -->
+              <!--     Open (.svg)</a> -->
+              <!-- </li> -->
+              <!-- <li><a id="save-button" href="#"> -->
+              <!--     <span class="glyphicon glyphicon-save"></span> -->
+              <!--     Save</a> -->
+              <!-- </li> -->
+            </ul>
+          </div>
+
         </div>
-        <input checked="checked" id="grid-check" type="checkbox">grid</input>
-        zoom:<select id="zoom-control"></select>
-        <div id="mode-btn-group" style="display:inline-block;vertical-align:middle">
+        <div class="btn-group">
+          <button id="grid-button" type="button"
+                  style_temp="background-color:white;color:blue"
+                  class="btn btn-default"
+                  data-toggle="modal" data-target="#myModal">
+            <span class="glyphicon glyphicon-cog"></span>
+          </button>
+        </div>
+        <div class="btn-group" style="padding:5px">
+          <select id="zoom-control"></select>
+        </div>
+        <div id="mode-btn-group" class="btn-group">
           <svg data-mode="control" id="control-mode-btn" width="32px" height="32px" viewBox="-40 -40 300 300" style="" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns="http://www.w3.org/2000/svg">
             <g transform="matrix(1.76533 0 0 1.76533 4.91105 5.01681)"><path d="m0, 0l50,-86.6l50,86.6z" transform="matrix(0.707107 -0.707107 0.707107 0.707107 35.394 107.646)"></path><path d="M100,100L100,200L200,200L200,100z" transform="matrix(0.298282 -0.298282 0.707107 0.707107 -66.12 24.9061)"></path></g>
           </svg>
@@ -146,5 +177,31 @@
       </div>
       <div id="paper-js-container" style="position:none_fixed;top:0;left:0"></div>
     </div>
+
+
+    <!-- Modal -->
+    <div class="modal" id="myModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+            <h4 class="modal-title" id="myModalLabel">Config</h4>
+          </div>
+          <div class="modal-body">
+            <form role="form">
+              <div class="checkbox">
+                <label>
+                  <input type="checkbox"> Show Grid
+                </label>
+              </div>
+            </form>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+            <!-- <button type="button" class="btn btn-primary">Save changes</button> -->
+          </div>
+        </div><!-- /.modal-content -->
+      </div><!-- /.modal-dialog -->
+    </div><!-- /.modal -->
   </body>
 </html>
