@@ -503,6 +503,25 @@
 
 (function() {
   var _ref,
+    __hasProp = {}.hasOwnProperty,
+    __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
+
+  this.GridSetting = (function(_super) {
+    __extends(GridSetting, _super);
+
+    function GridSetting() {
+      _ref = GridSetting.__super__.constructor.apply(this, arguments);
+      return _ref;
+    }
+
+    return GridSetting;
+
+  })(Backbone.Model);
+
+}).call(this);
+
+(function() {
+  var _ref,
     __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; },
     __hasProp = {}.hasOwnProperty,
     __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
@@ -749,6 +768,11 @@
     };
 
     CloneControlView.prototype.render = function() {
+      if (this.mode === "copy") {
+        this.$el.attr("opacity", 0.5);
+      } else {
+        this.$el.attr("opacity", 0);
+      }
       this.itemControl.visible = true;
       this.itemControl.render();
       return this.line_list_view.render();
@@ -2522,7 +2546,7 @@
     InspectorListView.prototype.tagName = "ul";
 
     InspectorListView.prototype.initialize = function() {
-      this.$el.attr("class", "unstyled");
+      this.$el.attr("class", "list-unstyled");
       this.item_list = this.options.item_list;
       this.control = this.options.control;
       this.listenTo(this.item_list, "add", this.addItem);
@@ -4186,6 +4210,9 @@
       this.snapPoints = __bind(this.snapPoints, this);
       this.createYLine = __bind(this.createYLine, this);
       this.createXLine = __bind(this.createXLine, this);
+      this.height = __bind(this.height, this);
+      this.width = __bind(this.width, this);
+      this.grid_size = __bind(this.grid_size, this);
       this.initialize = __bind(this.initialize, this);
       _ref = SvgGridView.__super__.constructor.apply(this, arguments);
       return _ref;
@@ -4193,12 +4220,22 @@
 
     SvgGridView.prototype.initialize = function() {
       this.lines = [];
-      this.width = this.options.width;
-      this.height = this.options.height;
-      this.gridsize = 10;
       this.createXLine();
       this.createYLine();
-      return this.setStyle();
+      this.setStyle();
+      return this.listenTo(this.model, "change", this.render);
+    };
+
+    SvgGridView.prototype.grid_size = function() {
+      return this.model.get("grid_size");
+    };
+
+    SvgGridView.prototype.width = function() {
+      return this.model.get("width");
+    };
+
+    SvgGridView.prototype.height = function() {
+      return this.model.get("height");
     };
 
     SvgGridView.prototype.createXLine = function() {
@@ -4208,7 +4245,7 @@
       poss = (function() {
         var _i, _ref1, _ref2, _results;
         _results = [];
-        for (i = _i = 0, _ref1 = this.width, _ref2 = this.gridsize; _ref2 > 0 ? _i <= _ref1 : _i >= _ref1; i = _i += _ref2) {
+        for (i = _i = 0, _ref1 = this.width(), _ref2 = this.grid_size(); _ref2 > 0 ? _i <= _ref1 : _i >= _ref1; i = _i += _ref2) {
           _results.push(i);
         }
         return _results;
@@ -4222,7 +4259,7 @@
             y: 0
           }, {
             x: i,
-            y: _this.height
+            y: _this.height()
           }));
           return index++;
         })(i));
@@ -4237,7 +4274,7 @@
       poss = (function() {
         var _i, _ref1, _ref2, _results;
         _results = [];
-        for (i = _i = 0, _ref1 = this.height, _ref2 = this.gridsize; _ref2 > 0 ? _i <= _ref1 : _i >= _ref1; i = _i += _ref2) {
+        for (i = _i = 0, _ref1 = this.height(), _ref2 = this.grid_size(); _ref2 > 0 ? _i <= _ref1 : _i >= _ref1; i = _i += _ref2) {
           _results.push(i);
         }
         return _results;
@@ -4251,7 +4288,7 @@
             x: 0
           }, {
             y: i,
-            x: _this.width
+            x: _this.width()
           }));
           return index++;
         })(i));
@@ -4265,7 +4302,7 @@
       w_poss = (function() {
         var _i, _ref1, _ref2, _results;
         _results = [];
-        for (i = _i = 0, _ref1 = this.width, _ref2 = this.gridsize; _ref2 > 0 ? _i <= _ref1 : _i >= _ref1; i = _i += _ref2) {
+        for (i = _i = 0, _ref1 = this.width(), _ref2 = this.grid_size(); _ref2 > 0 ? _i <= _ref1 : _i >= _ref1; i = _i += _ref2) {
           _results.push(i);
         }
         return _results;
@@ -4280,7 +4317,7 @@
       h_poss = (function() {
         var _j, _ref1, _ref2, _results;
         _results = [];
-        for (i = _j = 0, _ref1 = this.height, _ref2 = this.gridsize; _ref2 > 0 ? _j <= _ref1 : _j >= _ref1; i = _j += _ref2) {
+        for (i = _j = 0, _ref1 = this.height(), _ref2 = this.grid_size(); _ref2 > 0 ? _j <= _ref1 : _j >= _ref1; i = _j += _ref2) {
           _results.push(i);
         }
         return _results;
@@ -4336,6 +4373,9 @@
       var line, _i, _len, _ref1, _results,
         _this = this;
       this.$el.empty();
+      this.clear();
+      this.createXLine();
+      this.createYLine();
       _ref1 = this.lines;
       _results = [];
       for (_i = 0, _len = _ref1.length; _i < _len; _i++) {
@@ -5700,7 +5740,13 @@
     $("#export-button").click(function(e) {
       return SvgExport();
     });
+    _this.grid_setting = new GridSetting({
+      width: 800,
+      height: 600,
+      grid_size: 10
+    });
     _this.grid_view = new SvgGridView({
+      model: _this.grid_setting,
       el: $("#svg-canvas-grid"),
       width: 800,
       height: 600

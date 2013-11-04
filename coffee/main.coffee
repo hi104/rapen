@@ -87,7 +87,8 @@ $(document).ready(() =>
 
     $("#export-button").click((e)-> SvgExport())
 
-    @grid_view = new SvgGridView(el:$("#svg-canvas-grid"), width:800, height:600)
+    @grid_setting = new GridSetting(width:800, height:600, grid_size:10)
+    @grid_view = new SvgGridView(model:@grid_setting, el:$("#svg-canvas-grid"), width:800, height:600)
     @grid_view.render()
 
     @snap_line_view =  new SnapLineView(el:$("#snap-line-view"))

@@ -12,6 +12,7 @@ module.exports = function(grunt) {
                       "coffee/backbone/models/svg_item_list.coffee",
                       "coffee/backbone/models/path_segment_adapter.coffee",
                       "coffee/backbone/models/path_segment_point_adapter.coffee",
+                      "coffee/backbone/models/grid_setting.coffee",
                       "coffee/backbone/views/clone-control-view.coffee",
                       "coffee/backbone/views/controls/line_position_control.coffee",
                       "coffee/backbone/views/controls/position_control.coffee",
