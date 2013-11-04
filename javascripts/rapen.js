@@ -4414,6 +4414,9 @@
 
     function GridSettingView() {
       this.render = __bind(this.render, this);
+      this.onHeightChange = __bind(this.onHeightChange, this);
+      this.onWidthChange = __bind(this.onWidthChange, this);
+      this.onSizeChange = __bind(this.onSizeChange, this);
       this.onVisibleChange = __bind(this.onVisibleChange, this);
       this.visible = __bind(this.visible, this);
       this.height = __bind(this.height, this);
@@ -4425,11 +4428,17 @@
     }
 
     GridSettingView.prototype.events = {
-      "change #grid-visible-checkbox": "onVisibleChange"
+      "change #grid-visible-checkbox": "onVisibleChange",
+      "change #grid-size": "onSizeChange",
+      "change #grid-width": "onWidthChange",
+      "change #grid-height": "onHeightChange"
     };
 
     GridSettingView.prototype.initialize = function() {
       this.grid_visible_el = $("#grid-visible-checkbox");
+      this.grid_size_el = $("#grid-size");
+      this.grid_height_el = $("#grid-height");
+      this.grid_width_el = $("#grid-width");
       return this.listenTo(this.model, "change", this.render);
     };
 
@@ -4453,10 +4462,25 @@
       return this.model.set("visible", this.grid_visible_el.prop("checked"));
     };
 
+    GridSettingView.prototype.onSizeChange = function() {
+      return this.model.set("grid_size", Number(this.grid_size_el.val()));
+    };
+
+    GridSettingView.prototype.onWidthChange = function() {
+      return this.model.set("width", Number(this.grid_width_el.val()));
+    };
+
+    GridSettingView.prototype.onHeightChange = function() {
+      return this.model.set("height", Number(this.grid_height_el.val()));
+    };
+
     GridSettingView.prototype.render = function() {
-      return this.grid_visible_el.prop({
+      this.grid_visible_el.prop({
         "checked": this.visible()
       });
+      this.grid_size_el.val(this.grid_size());
+      this.grid_height_el.val(this.height());
+      return this.grid_width_el.val(this.width());
     };
 
     return GridSettingView;
