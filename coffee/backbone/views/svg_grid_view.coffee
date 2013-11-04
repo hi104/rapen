@@ -15,6 +15,9 @@ class @SvgGridView extends Backbone.View
     height:() =>
         @model.get("height")
 
+    visible:() =>
+        @model.get("visible")
+
 
     createXLine:()=>
         index = 0
@@ -76,6 +79,11 @@ class @SvgGridView extends Backbone.View
         @lines = []
 
     render:() =>
+        if @visible()
+            @show()
+        else
+            @hide()
+
         @$el.empty()
         @clear()
         @createXLine()

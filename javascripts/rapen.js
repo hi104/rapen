@@ -4210,6 +4210,7 @@
       this.snapPoints = __bind(this.snapPoints, this);
       this.createYLine = __bind(this.createYLine, this);
       this.createXLine = __bind(this.createXLine, this);
+      this.visible = __bind(this.visible, this);
       this.height = __bind(this.height, this);
       this.width = __bind(this.width, this);
       this.grid_size = __bind(this.grid_size, this);
@@ -4236,6 +4237,10 @@
 
     SvgGridView.prototype.height = function() {
       return this.model.get("height");
+    };
+
+    SvgGridView.prototype.visible = function() {
+      return this.model.get("visible");
     };
 
     SvgGridView.prototype.createXLine = function() {
@@ -4372,6 +4377,11 @@
     SvgGridView.prototype.render = function() {
       var line, _i, _len, _ref1, _results,
         _this = this;
+      if (this.visible()) {
+        this.show();
+      } else {
+        this.hide();
+      }
       this.$el.empty();
       this.clear();
       this.createXLine();
@@ -4388,6 +4398,68 @@
     };
 
     return SvgGridView;
+
+  })(Backbone.View);
+
+}).call(this);
+
+(function() {
+  var _ref,
+    __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; },
+    __hasProp = {}.hasOwnProperty,
+    __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
+
+  this.GridSettingView = (function(_super) {
+    __extends(GridSettingView, _super);
+
+    function GridSettingView() {
+      this.render = __bind(this.render, this);
+      this.onVisibleChange = __bind(this.onVisibleChange, this);
+      this.visible = __bind(this.visible, this);
+      this.height = __bind(this.height, this);
+      this.width = __bind(this.width, this);
+      this.grid_size = __bind(this.grid_size, this);
+      this.initialize = __bind(this.initialize, this);
+      _ref = GridSettingView.__super__.constructor.apply(this, arguments);
+      return _ref;
+    }
+
+    GridSettingView.prototype.events = {
+      "change #grid-visible-checkbox": "onVisibleChange"
+    };
+
+    GridSettingView.prototype.initialize = function() {
+      this.grid_visible_el = $("#grid-visible-checkbox");
+      return this.listenTo(this.model, "change", this.render);
+    };
+
+    GridSettingView.prototype.grid_size = function() {
+      return this.model.get("grid_size");
+    };
+
+    GridSettingView.prototype.width = function() {
+      return this.model.get("width");
+    };
+
+    GridSettingView.prototype.height = function() {
+      return this.model.get("height");
+    };
+
+    GridSettingView.prototype.visible = function() {
+      return this.model.get("visible");
+    };
+
+    GridSettingView.prototype.onVisibleChange = function() {
+      return this.model.set("visible", this.grid_visible_el.prop("checked"));
+    };
+
+    GridSettingView.prototype.render = function() {
+      return this.grid_visible_el.prop({
+        "checked": this.visible()
+      });
+    };
+
+    return GridSettingView;
 
   })(Backbone.View);
 
@@ -5743,7 +5815,8 @@
     _this.grid_setting = new GridSetting({
       width: 800,
       height: 600,
-      grid_size: 10
+      grid_size: 10,
+      visible: true
     });
     _this.grid_view = new SvgGridView({
       model: _this.grid_setting,
@@ -5752,6 +5825,11 @@
       height: 600
     });
     _this.grid_view.render();
+    _this.grid_setting_view = new GridSettingView({
+      model: _this.grid_setting,
+      el: $("#grid-setting")
+    });
+    _this.grid_setting_view.render();
     _this.snap_line_view = new SnapLineView({
       el: $("#snap-line-view")
     });
