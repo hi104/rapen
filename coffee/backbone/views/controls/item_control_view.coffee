@@ -4,7 +4,6 @@ class @ItemControl extends Backbone.View
         @manager = @options.manager
         @position_control  = new PositionControl(
             selectView: @,
-            el: @_appendElement('rect'),
             get_item: @getItem)
 
         @scale_control_set = new ScaleControlSet(
@@ -40,7 +39,6 @@ class @ItemControl extends Backbone.View
             @manager.onEvent("onDragging", obj, e)
         )
 
-        @visible = false
         @render()
 
     _appendElement:(tag_name) =>
@@ -78,12 +76,24 @@ class @ItemControl extends Backbone.View
         @_removeLineView()
         @selectitem.unbind("change", @onModelChange, @) if @selectitem
         @selectitem = undefined
-        @visible = false
         @render()
+
+    hide:() =>
+        @$el.hide()
+        @select_line_view.$el.hide() if @select_line_view
+
+    show:() =>
+        @$el.show()
+        @select_line_view.$el.show() if @select_line_view
 
     render: () ->
 
-        $(@el).attr("display", (if @visible then "" else "none"))
+        # if @visible
+        #     @$el.show()
+        #     @select_line_view.$el.show() if @select_line_view
+        # else
+        #     @$el.hide()
+        #     @select_line_view.$el.hide() if @select_line_view
 
         return unless @selectitem
 

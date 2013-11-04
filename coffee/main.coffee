@@ -22,12 +22,6 @@ $(document).ready(() =>
     @cloneControlView.setCanvas(@SvgCanvasBase)
 
     @svgPathControl = new SvgPathControlView(el:$("#path-control-panel"))
-    cloneControlView.bind("onChangeList", (control) =>
-        # if cloneControlView.isOneItem()
-        #     @event_manager.selected_item = null
-        # if not cloneControlView.isOneItem()
-        #     svgPathControl.unbindItem()
-    )
 
     @inspectorListView = new InspectorListView({
         control: @cloneControlView,
@@ -44,7 +38,6 @@ $(document).ready(() =>
 
         $("#clone-control-view-wapper").attr("transform", canvas_transform)
         cloneControlView.render()
-
         svgPathControl.render()
     )
 
@@ -122,17 +115,9 @@ $(document).ready(() =>
         SvgCanvasBase.deleteSelectdItem()
     )
 
-    key("c", (e) =>
-        event_manager.setMode('control')
-    )
-
-    key("t", (e) =>
-        event_manager.setMode('text')
-    )
-
-    key("p", (e) =>
-        event_manager.setMode('path')
-    )
+    key("c", (e) => event_manager.setMode('control'))
+    key("t", (e) => event_manager.setMode('text'))
+    key("v", (e) => event_manager.setMode('path'))
 
     move_item_position = (pos) =>
         if cloneControlView.item_list.length > 0

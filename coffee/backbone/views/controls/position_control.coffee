@@ -4,21 +4,7 @@ class @PositionControl extends Backbone.View
 
     initialize: () ->
         @selectView = @options.selectView
-        # @bind('mousedown', @onMouseDown)
-        @setStyle()
         @getItem = @options.get_item
-
-    setStyle:() ->
-        $(@el).attr("fill", "none")
-
-    render:()=>
-        bbox = @getItem().getBBox();
-        @$el.attr({
-            "width": bbox.width,
-            "height": bbox.height,
-            "x": bbox.x,
-            "y": bbox.y})
-        SVGUtil.setMatrixTransform(@el,  @getItem().getCTM())
 
     onMouseDown:(e) =>
         @trigger("onMouseDown", @, e)

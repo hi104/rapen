@@ -135,17 +135,19 @@ class @CloneControlView extends Backbone.View
 
     hide:() =>
         @$el.hide()
-        @itemControl.visible = false
-        @itemControl.render()
+        @itemControl.hide()
         @line_list_view.$el.hide()
-        @line_list_view.render()
+        # @line_list_view.render()
+
+    show:() =>
+        @$el.show()
+        @itemControl.show()
+        @line_list_view.$el.show()
 
     clear:() =>
-        @$el.hide()
+        @hide()
         @$el.attr("transform", "")
         @$el.empty()
-        @itemControl.visible = false
-        @itemControl.render()
         @line_list_view.clear()
         while @item_list.length > 0
             @item_list.remove(@item_list.first())
@@ -155,7 +157,7 @@ class @CloneControlView extends Backbone.View
             @$el.attr("opacity", 0.5)
         else
             @$el.attr("opacity", 0)
-        @itemControl.visible = true
+        @itemControl.show()
         @itemControl.render()
         @line_list_view.render()
 
@@ -198,7 +200,7 @@ class @CloneControlView extends Backbone.View
         @itemControl.clear()
         @stopListening()
         @listenTo(@item,"change", @update)
-        @itemControl.visible = true
+        @itemControl.show()
         @itemControl.setItem(@item)
         @itemControl.render()
 
