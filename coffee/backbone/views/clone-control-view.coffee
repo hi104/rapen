@@ -151,7 +151,10 @@ class @CloneControlView extends Backbone.View
             @item_list.remove(@item_list.first())
 
     render:() =>
-        # @$el.show()
+        if @mode == "copy"
+            @$el.attr("opacity", 0.5)
+        else
+            @$el.attr("opacity", 0)
         @itemControl.visible = true
         @itemControl.render()
         @line_list_view.render()
