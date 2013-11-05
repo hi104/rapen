@@ -26,7 +26,6 @@ class @CloneControlView extends Backbone.View
             })
 
         @mode = ""
-        @lazy_render_set_timeout = null
 
     getControl:() => @itemControl
     setCanvas:(canvas) =>
@@ -100,13 +99,6 @@ class @CloneControlView extends Backbone.View
         )
         @line_list_view.render()
 
-    lazyRender:()=>
-        clearTimeout(@lazy_render_set_timeout) if @lazy_render_set_timeout
-        @lazy_render_set_timeout = setTimeout((() =>
-            @render()
-            @lazy_render_set_timeout = null
-        ), 50)
-
     initControls:(models) =>
         @clear()
         for model in models
@@ -160,6 +152,8 @@ class @CloneControlView extends Backbone.View
         @itemControl.show()
         @itemControl.render()
         @line_list_view.render()
+
+    @::lazyRender = _.debounce(@::render, 50)
 
     _setChildControlEvent:(view) =>
         view.bind("onClick", (obj, e) =>
