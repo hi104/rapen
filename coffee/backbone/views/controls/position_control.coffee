@@ -3,7 +3,6 @@ class @PositionControl extends Backbone.View
         "mousedown": "onMouseDown"
 
     initialize: () ->
-        @selectView = @options.selectView
         @getItem = @options.get_item
 
     onMouseDown:(e) =>

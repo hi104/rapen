@@ -3,7 +3,6 @@ class @ItemControl extends Backbone.View
     initialize: () ->
         @manager = @options.manager
         @position_control  = new PositionControl(
-            selectView: @,
             get_item: @getItem)
 
         @scale_control_set = new ScaleControlSet(

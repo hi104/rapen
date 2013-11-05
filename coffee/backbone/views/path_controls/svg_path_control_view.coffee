@@ -151,6 +151,8 @@ class @SvgPathControlView extends Backbone.View
         @listenTo(item, "change:matrix", @render)
         @createViews()
 
+    getItem:() => @item
+
     createPoint:(x, y)=>
         el = SVGUtil.createTag("circle")
         $(el).attr({

@@ -539,12 +539,12 @@
       this._setChildControlEvent = __bind(this._setChildControlEvent, this);
       this.render = __bind(this.render, this);
       this.clear = __bind(this.clear, this);
+      this.show = __bind(this.show, this);
       this.hide = __bind(this.hide, this);
       this.addItem = __bind(this.addItem, this);
       this.removeItem = __bind(this.removeItem, this);
       this.exists = __bind(this.exists, this);
       this.initControls = __bind(this.initControls, this);
-      this.lazyRender = __bind(this.lazyRender, this);
       this.update = __bind(this.update, this);
       this._viewUpdate = __bind(this._viewUpdate, this);
       this._updateForOneItem = __bind(this._updateForOneItem, this);
@@ -587,8 +587,7 @@
         el: this.options.select_el,
         manager: this
       });
-      this.mode = "";
-      return this.lazy_render_set_timeout = null;
+      return this.mode = "";
     };
 
     CloneControlView.prototype.getControl = function() {
@@ -691,17 +690,6 @@
       return this.line_list_view.render();
     };
 
-    CloneControlView.prototype.lazyRender = function() {
-      var _this = this;
-      if (this.lazy_render_set_timeout) {
-        clearTimeout(this.lazy_render_set_timeout);
-      }
-      return this.lazy_render_set_timeout = setTimeout((function() {
-        _this.render();
-        return _this.lazy_render_set_timeout = null;
-      }), 50);
-    };
-
     CloneControlView.prototype.initControls = function(models) {
       var model, _i, _len, _results;
       this.clear();
@@ -746,19 +734,21 @@
 
     CloneControlView.prototype.hide = function() {
       this.$el.hide();
-      this.itemControl.visible = false;
-      this.itemControl.render();
-      this.line_list_view.$el.hide();
-      return this.line_list_view.render();
+      this.itemControl.hide();
+      return this.line_list_view.$el.hide();
+    };
+
+    CloneControlView.prototype.show = function() {
+      this.$el.show();
+      this.itemControl.show();
+      return this.line_list_view.$el.show();
     };
 
     CloneControlView.prototype.clear = function() {
       var _results;
-      this.$el.hide();
+      this.hide();
       this.$el.attr("transform", "");
       this.$el.empty();
-      this.itemControl.visible = false;
-      this.itemControl.render();
       this.line_list_view.clear();
       _results = [];
       while (this.item_list.length > 0) {
@@ -773,10 +763,12 @@
       } else {
         this.$el.attr("opacity", 0);
       }
-      this.itemControl.visible = true;
+      this.itemControl.show();
       this.itemControl.render();
       return this.line_list_view.render();
     };
+
+    CloneControlView.prototype.lazyRender = _.debounce(CloneControlView.prototype.render, 50);
 
     CloneControlView.prototype._setChildControlEvent = function(view) {
       var _this = this;
@@ -824,7 +816,7 @@
       this.itemControl.clear();
       this.stopListening();
       this.listenTo(this.item, "change", this.update);
-      this.itemControl.visible = true;
+      this.itemControl.show();
       this.itemControl.setItem(this.item);
       this.itemControl.render();
       this.cancelEvent(e);
@@ -1023,7 +1015,6 @@
       this._getMovedControlPosition = __bind(this._getMovedControlPosition, this);
       this.onDragging = __bind(this.onDragging, this);
       this.onMouseDown = __bind(this.onMouseDown, this);
-      this.render = __bind(this.render, this);
       _ref = PositionControl.__super__.constructor.apply(this, arguments);
       return _ref;
     }
@@ -1035,25 +1026,7 @@
     };
 
     PositionControl.prototype.initialize = function() {
-      this.selectView = this.options.selectView;
-      this.setStyle();
       return this.getItem = this.options.get_item;
-    };
-
-    PositionControl.prototype.setStyle = function() {
-      return $(this.el).attr("fill", "none");
-    };
-
-    PositionControl.prototype.render = function() {
-      var bbox;
-      bbox = this.getItem().getBBox();
-      this.$el.attr({
-        "width": bbox.width,
-        "height": bbox.height,
-        "x": bbox.x,
-        "y": bbox.y
-      });
-      return SVGUtil.setMatrixTransform(this.el, this.getItem().getCTM());
     };
 
     PositionControl.prototype.onMouseDown = function(e) {
@@ -2010,6 +1983,8 @@
     __extends(ItemControl, _super);
 
     function ItemControl() {
+      this.show = __bind(this.show, this);
+      this.hide = __bind(this.hide, this);
       this.clear = __bind(this.clear, this);
       this.setItem = __bind(this.setItem, this);
       this._removeLineView = __bind(this._removeLineView, this);
@@ -2027,8 +2002,6 @@
         _this = this;
       this.manager = this.options.manager;
       this.position_control = new PositionControl({
-        selectView: this,
-        el: this._appendElement('rect'),
         get_item: this.getItem
       });
       this.scale_control_set = new ScaleControlSet({
@@ -2065,7 +2038,6 @@
       this.position_control.bind("onDragging", function(obj, e) {
         return _this.manager.onEvent("onDragging", obj, e);
       });
-      this.visible = false;
       return this.render();
     };
 
@@ -2123,12 +2095,24 @@
         this.selectitem.unbind("change", this.onModelChange, this);
       }
       this.selectitem = void 0;
-      this.visible = false;
       return this.render();
     };
 
+    ItemControl.prototype.hide = function() {
+      this.$el.hide();
+      if (this.select_line_view) {
+        return this.select_line_view.$el.hide();
+      }
+    };
+
+    ItemControl.prototype.show = function() {
+      this.$el.show();
+      if (this.select_line_view) {
+        return this.select_line_view.$el.show();
+      }
+    };
+
     ItemControl.prototype.render = function() {
-      $(this.el).attr("display", (this.visible ? "" : "none"));
       if (!this.selectitem) {
         return;
       }
@@ -2241,10 +2225,12 @@
       }
     };
 
-    ElementControlMode.prototype.onStart = function() {};
+    ElementControlMode.prototype.onStart = function() {
+      return this.getControl().show();
+    };
 
     ElementControlMode.prototype.onStop = function() {
-      return this.getControl().clear();
+      return this.getControl().hide();
     };
 
     ElementControlMode.prototype.cancelEvent = function(e) {
@@ -2327,19 +2313,47 @@
       this.onStart = __bind(this.onStart, this);
       this._onRegionDrop = __bind(this._onRegionDrop, this);
       this.onEvent = __bind(this.onEvent, this);
+      var _this = this;
       _.extend(this, Backbone.Events);
       this.maneger = maneger;
       this.regionView = new SelectRegionControlView({
         el: $("#select-path-region-view")
       });
+      this.position_control = new PositionControl({
+        get_item: null
+      });
+      this.position_control.onDragging = function(e) {
+        var pos;
+        pos = _this.position_control._getMovedControlPosition(e);
+        return _this.position_control.movePosition(pos);
+      };
+      this.position_control.bind("onMouseDown", function(obj, e) {
+        var ondrop;
+        $(document).mousemove(_this.position_control.onDragging);
+        ondrop = function(e) {
+          _this.position_control.onDrop(e);
+          $(document).unbind('mousemove', _this.position_control.onDragging);
+          $(document).unbind('mouseup', ondrop);
+          return _this.cancelEvent(e);
+        };
+        return $(document).mouseup(ondrop);
+      });
     }
 
     PathEditMode.prototype.onEvent = function(event, sender, e, options) {
+      var _this = this;
       if (sender instanceof SvgElementView) {
         if (event === "onClick") {
           if (sender.model.el instanceof SVGPathElement) {
-            return svgPathControl.setItem(sender.model);
+            svgPathControl.setItem(sender.model);
           }
+        }
+        if (event === "onMouseDown") {
+          this.cancelEvent(e);
+          this.position_control.getItem = function() {
+            return sender.model;
+          };
+          return this.position_control.onMouseDown(e);
         }
       } else if (sender instanceof SvgCanvas) {
         if (event === "onMouseDown" && !e.altKey) {
@@ -2365,7 +2379,13 @@
       });
     };
 
-    PathEditMode.prototype.onStart = function() {};
+    PathEditMode.prototype.onStart = function() {
+      var selected_item;
+      selected_item = this.maneger.getControl().firstOriginalItem();
+      if (selected_item) {
+        return svgPathControl.setItem(selected_item);
+      }
+    };
 
     PathEditMode.prototype.onStop = function() {
       return this.disable();
@@ -2845,6 +2865,7 @@
     function SvgPathControlView() {
       this.createRect = __bind(this.createRect, this);
       this.createPoint = __bind(this.createPoint, this);
+      this.getItem = __bind(this.getItem, this);
       this.setItem = __bind(this.setItem, this);
       this.isSelected = __bind(this.isSelected, this);
       this.unbindItem = __bind(this.unbindItem, this);
@@ -3093,6 +3114,10 @@
       this.path.setPathData($(this.item.el).attr("d"));
       this.listenTo(item, "change:matrix", this.render);
       return this.createViews();
+    };
+
+    SvgPathControlView.prototype.getItem = function() {
+      return this.item;
     };
 
     SvgPathControlView.prototype.createPoint = function(x, y) {
@@ -5771,7 +5796,6 @@
     _this.svgPathControl = new SvgPathControlView({
       el: $("#path-control-panel")
     });
-    cloneControlView.bind("onChangeList", function(control) {});
     _this.inspectorListView = new InspectorListView({
       control: _this.cloneControlView,
       item_list: SvgCanvasBase.item_list
@@ -5903,7 +5927,7 @@
     key("t", function(e) {
       return event_manager.setMode('text');
     });
-    key("p", function(e) {
+    key("v", function(e) {
       return event_manager.setMode('path');
     });
     move_item_position = function(pos) {
