@@ -7,7 +7,7 @@ work in chrome, safari
 
 http://hi104.github.io/rapen/
 
-Feature
+Features
 -----------------
 * Rotate, Scale, Move
 * Multi selection

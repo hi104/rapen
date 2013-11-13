@@ -2,28 +2,16 @@ class @GridSettingView extends Backbone.View
 
     events:
         "change #grid-visible-checkbox"  : "onVisibleChange"
-        "change #grid-size"  : "onSizeChange"
+        "change #grid-size"   : "onSizeChange"
         "change #grid-width"  : "onWidthChange"
-        "change #grid-height"  : "onHeightChange"
+        "change #grid-height" : "onHeightChange"
 
     initialize:() =>
         @grid_visible_el = $("#grid-visible-checkbox")
-        @grid_size_el = $("#grid-size")
-        @grid_height_el = $("#grid-height")
-        @grid_width_el = $("#grid-width")
+        @grid_size_el    = $("#grid-size")
+        @grid_height_el  = $("#grid-height")
+        @grid_width_el   = $("#grid-width")
         @listenTo(@model, "change", @render)
-
-    grid_size:() =>
-        @model.get("grid_size")
-
-    width:() =>
-        @model.get("width")
-
-    height:() =>
-        @model.get("height")
-
-    visible:() =>
-        @model.get("visible")
 
     onVisibleChange:() =>
         @model.set("visible", @grid_visible_el.prop("checked"))
@@ -38,7 +26,7 @@ class @GridSettingView extends Backbone.View
         @model.set("height", Number(@grid_height_el.val()))
 
     render:() =>
-        @grid_visible_el.prop({"checked": @visible()})
-        @grid_size_el.val(@grid_size())
-        @grid_height_el.val(@height())
-        @grid_width_el.val(@width())
+        @grid_visible_el.prop({"checked": @model.visible()})
+        @grid_size_el.val(@model.gridSize())
+        @grid_height_el.val(@model.height())
+        @grid_width_el.val(@model.width())

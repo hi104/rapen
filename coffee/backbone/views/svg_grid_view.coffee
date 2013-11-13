@@ -7,17 +7,16 @@ class @SvgGridView extends Backbone.View
         @listenTo(@model, "change", @render)
 
     grid_size:() =>
-        @model.get("grid_size")
+        @model.gridSize()
 
     width:() =>
-        @model.get("width")
+        @model.width()
 
     height:() =>
-        @model.get("height")
+        @model.height()
 
     visible:() =>
-        @model.get("visible")
-
+        @model.visible()
 
     createXLine:()=>
         index = 0

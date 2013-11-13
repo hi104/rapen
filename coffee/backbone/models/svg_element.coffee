@@ -57,7 +57,9 @@ class @SvgElement extends Backbone.Model
 
     getSnapPoints:() =>
         points = @getBBoxPoints()
-        center_point = SVGUtil.createPoint((points[0].x + points[3].x)/2, (points[0].y + points[3].y)/2)
+        center_x = (points[0].x + points[3].x)/2
+        center_y = (points[0].y + points[3].y)/2
+        center_point = SVGUtil.createPoint(center_x, center_y)
         points.push(center_point)
         points
 

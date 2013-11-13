@@ -3,7 +3,7 @@ class @PropertyEditView extends Backbone.View
     tagName:  "tr"
 
     events:
-        "keypress .edit"  : "updateOnEnter",
+        "keydown .edit"  : "onKeydown",
         "change .edit"  : "onChange"
 
     template : _.template('
@@ -18,13 +18,15 @@ class @PropertyEditView extends Backbone.View
         values[@attrName] = val
         @model.setAttr(values)
 
-    updateOnEnter:(e) =>
-        if (e.keyCode == 13) #enter
-            @update(@input.val())
+    onKeydown:(e) =>
+        setTimeout(() =>
+            v = @input.val()
+            console.log v
+            @update v,
+        10)
 
     onChange:(e) =>
-        if @inputType == "color"
-            @update(@input.val())
+        # @update(@input.val())
 
     initialize:(attrName) =>
         @attrName = @options.attrName

@@ -27,14 +27,18 @@ class @SvgCanvas extends Backbone.View
         @setControlViewEvent(view)
         view.render()
 
-    addElement:(elm) =>
+    addItem:(item) =>
+        elm = item.el
         $(elm).attr("id", @generateId())
         $(elm).attr("class", "svg-control-item")
         $(@mainCanvas).append(elm)
-        item = new SvgElement()
-        item.setElement(elm)
         @item_list.add(item)
         item
+
+    addElement:(elm) =>
+        item = new SvgElement()
+        item.setElement(elm)
+        @addItem(item)
 
     setControlViewEvent:(view) =>
         ["onMouseDown", "onDblClick", "onClick"].forEach((event) =>

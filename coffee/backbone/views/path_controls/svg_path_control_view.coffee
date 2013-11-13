@@ -33,7 +33,7 @@ class @SvgPathControlView extends Backbone.View
                 @_segments.push(control_view.segment)
 
             last_control = _(controls).last()
-            for control in [last_control]
+            for control in _.compact([last_control])
                 do(control) =>
                     controls[0].segment.on("change", () =>
                         control.curveControl.render()

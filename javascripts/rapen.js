@@ -190,9 +190,11 @@
     };
 
     SvgElement.prototype.getSnapPoints = function() {
-      var center_point, points;
+      var center_point, center_x, center_y, points;
       points = this.getBBoxPoints();
-      center_point = SVGUtil.createPoint((points[0].x + points[3].x) / 2, (points[0].y + points[3].y) / 2);
+      center_x = (points[0].x + points[3].x) / 2;
+      center_y = (points[0].y + points[3].y) / 2;
+      center_point = SVGUtil.createPoint(center_x, center_y);
       points.push(center_point);
       return points;
     };
@@ -503,6 +505,7 @@
 
 (function() {
   var _ref,
+    __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; },
     __hasProp = {}.hasOwnProperty,
     __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
 
@@ -510,9 +513,29 @@
     __extends(GridSetting, _super);
 
     function GridSetting() {
+      this.visible = __bind(this.visible, this);
+      this.height = __bind(this.height, this);
+      this.width = __bind(this.width, this);
+      this.gridSize = __bind(this.gridSize, this);
       _ref = GridSetting.__super__.constructor.apply(this, arguments);
       return _ref;
     }
+
+    GridSetting.prototype.gridSize = function() {
+      return this.get("grid_size");
+    };
+
+    GridSetting.prototype.width = function() {
+      return this.get("width");
+    };
+
+    GridSetting.prototype.height = function() {
+      return this.get("height");
+    };
+
+    GridSetting.prototype.visible = function() {
+      return this.get("visible");
+    };
 
     return GridSetting;
 
@@ -2407,6 +2430,52 @@
 }).call(this);
 
 (function() {
+  var __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
+
+  this.GradientEditMode = (function() {
+    function GradientEditMode(maneger) {
+      this.disable = __bind(this.disable, this);
+      this.onStop = __bind(this.onStop, this);
+      this.onStart = __bind(this.onStart, this);
+      this.onEvent = __bind(this.onEvent, this);
+      _.extend(this, Backbone.Events);
+      this.maneger = maneger;
+      this.gradient_tool = new GradientToolView({
+        el: $("#gradient-tool")
+      });
+      this.gradient_tool.disable();
+    }
+
+    GradientEditMode.prototype.onEvent = function(event, sender, e, options) {
+      if (sender instanceof SvgElementView) {
+        if (event === "onClick") {
+          return this.gradient_tool.setItem(sender.model);
+        }
+      }
+    };
+
+    GradientEditMode.prototype.onStart = function() {
+      return this.gradient_tool.render();
+    };
+
+    GradientEditMode.prototype.onStop = function() {
+      return this.gradient_tool.disable();
+    };
+
+    GradientEditMode.prototype.disable = function() {};
+
+    GradientEditMode.prototype.cancelEvent = function(e) {
+      e.preventDefault();
+      return e.stopPropagation();
+    };
+
+    return GradientEditMode;
+
+  })();
+
+}).call(this);
+
+(function() {
   var _ref,
     __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; },
     __hasProp = {}.hasOwnProperty,
@@ -2485,7 +2554,8 @@
       this.modes = {
         "control": new ElementControlMode(this),
         "text": new TextEditMode(this),
-        "path": new PathEditMode(this)
+        "path": new PathEditMode(this),
+        "grad": new GradientEditMode(this)
       };
       _ref = this.modes;
       for (name in _ref) {
@@ -2926,7 +2996,7 @@
           this._segments.push(control_view.segment);
         }
         last_control = _(controls).last();
-        _ref3 = [last_control];
+        _ref3 = _.compact([last_control]);
         _fn = function(control) {
           return controls[0].segment.on("change", function() {
             return control.curveControl.render();
@@ -3572,7 +3642,7 @@
       this.initElement = __bind(this.initElement, this);
       this.initialize = __bind(this.initialize, this);
       this.onChange = __bind(this.onChange, this);
-      this.updateOnEnter = __bind(this.updateOnEnter, this);
+      this.onKeydown = __bind(this.onKeydown, this);
       this.update = __bind(this.update, this);
       _ref = PropertyEditView.__super__.constructor.apply(this, arguments);
       return _ref;
@@ -3581,7 +3651,7 @@
     PropertyEditView.prototype.tagName = "tr";
 
     PropertyEditView.prototype.events = {
-      "keypress .edit": "updateOnEnter",
+      "keydown .edit": "onKeydown",
       "change .edit": "onChange"
     };
 
@@ -3599,17 +3669,17 @@
       return this.model.setAttr(values);
     };
 
-    PropertyEditView.prototype.updateOnEnter = function(e) {
-      if (e.keyCode === 13) {
-        return this.update(this.input.val());
-      }
+    PropertyEditView.prototype.onKeydown = function(e) {
+      var _this = this;
+      return setTimeout(function() {
+        var v;
+        v = _this.input.val();
+        console.log(v);
+        return _this.update(v);
+      }, 10);
     };
 
-    PropertyEditView.prototype.onChange = function(e) {
-      if (this.inputType === "color") {
-        return this.update(this.input.val());
-      }
-    };
+    PropertyEditView.prototype.onChange = function(e) {};
 
     PropertyEditView.prototype.initialize = function(attrName) {
       this.attrName = this.options.attrName;
@@ -4253,19 +4323,19 @@
     };
 
     SvgGridView.prototype.grid_size = function() {
-      return this.model.get("grid_size");
+      return this.model.gridSize();
     };
 
     SvgGridView.prototype.width = function() {
-      return this.model.get("width");
+      return this.model.width();
     };
 
     SvgGridView.prototype.height = function() {
-      return this.model.get("height");
+      return this.model.height();
     };
 
     SvgGridView.prototype.visible = function() {
-      return this.model.get("visible");
+      return this.model.visible();
     };
 
     SvgGridView.prototype.createXLine = function() {
@@ -4443,10 +4513,6 @@
       this.onWidthChange = __bind(this.onWidthChange, this);
       this.onSizeChange = __bind(this.onSizeChange, this);
       this.onVisibleChange = __bind(this.onVisibleChange, this);
-      this.visible = __bind(this.visible, this);
-      this.height = __bind(this.height, this);
-      this.width = __bind(this.width, this);
-      this.grid_size = __bind(this.grid_size, this);
       this.initialize = __bind(this.initialize, this);
       _ref = GridSettingView.__super__.constructor.apply(this, arguments);
       return _ref;
@@ -4467,22 +4533,6 @@
       return this.listenTo(this.model, "change", this.render);
     };
 
-    GridSettingView.prototype.grid_size = function() {
-      return this.model.get("grid_size");
-    };
-
-    GridSettingView.prototype.width = function() {
-      return this.model.get("width");
-    };
-
-    GridSettingView.prototype.height = function() {
-      return this.model.get("height");
-    };
-
-    GridSettingView.prototype.visible = function() {
-      return this.model.get("visible");
-    };
-
     GridSettingView.prototype.onVisibleChange = function() {
       return this.model.set("visible", this.grid_visible_el.prop("checked"));
     };
@@ -4501,11 +4551,11 @@
 
     GridSettingView.prototype.render = function() {
       this.grid_visible_el.prop({
-        "checked": this.visible()
+        "checked": this.model.visible()
       });
-      this.grid_size_el.val(this.grid_size());
-      this.grid_height_el.val(this.height());
-      return this.grid_width_el.val(this.width());
+      this.grid_size_el.val(this.model.gridSize());
+      this.grid_height_el.val(this.model.height());
+      return this.grid_width_el.val(this.model.width());
     };
 
     return GridSettingView;
@@ -4538,6 +4588,7 @@
       this.addZoomCenter = __bind(this.addZoomCenter, this);
       this.setControlViewEvent = __bind(this.setControlViewEvent, this);
       this.addElement = __bind(this.addElement, this);
+      this.addItem = __bind(this.addItem, this);
       this.onAddItem = __bind(this.onAddItem, this);
       this.removeItem = __bind(this.removeItem, this);
       this.generateId = __bind(this.generateId, this);
@@ -4586,15 +4637,21 @@
       return view.render();
     };
 
-    SvgCanvas.prototype.addElement = function(elm) {
-      var item;
+    SvgCanvas.prototype.addItem = function(item) {
+      var elm;
+      elm = item.el;
       $(elm).attr("id", this.generateId());
       $(elm).attr("class", "svg-control-item");
       $(this.mainCanvas).append(elm);
-      item = new SvgElement();
-      item.setElement(elm);
       this.item_list.add(item);
       return item;
+    };
+
+    SvgCanvas.prototype.addElement = function(elm) {
+      var item;
+      item = new SvgElement();
+      item.setElement(elm);
+      return this.addItem(item);
     };
 
     SvgCanvas.prototype.setControlViewEvent = function(view) {
@@ -5187,6 +5244,645 @@
     };
 
     return ZOrderControl;
+
+  })(Backbone.View);
+
+}).call(this);
+
+(function() {
+  var _ref, _ref1, _ref2, _ref3, _ref4, _ref5, _ref6, _ref7,
+    __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; },
+    __hasProp = {}.hasOwnProperty,
+    __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
+
+  this.LinearGradientModel = (function(_super) {
+    __extends(LinearGradientModel, _super);
+
+    function LinearGradientModel() {
+      this.toAttr = __bind(this.toAttr, this);
+      _ref = LinearGradientModel.__super__.constructor.apply(this, arguments);
+      return _ref;
+    }
+
+    LinearGradientModel.prototype.toAttr = function() {
+      var attrs;
+      attrs = {};
+      attrs["x1"] = this.get("x1") + "%";
+      attrs["y1"] = this.get("y1") + "%";
+      attrs["x2"] = this.get("x2") + "%";
+      attrs["y2"] = this.get("y2") + "%";
+      attrs["spreadMethod"] = this.get("spreadMethod");
+      attrs["gradientUnits"] = this.get("gradientUnits");
+      return attrs;
+    };
+
+    return LinearGradientModel;
+
+  })(Backbone.Model);
+
+  this.RadialGradientModel = (function(_super) {
+    __extends(RadialGradientModel, _super);
+
+    function RadialGradientModel() {
+      this.toAttr = __bind(this.toAttr, this);
+      _ref1 = RadialGradientModel.__super__.constructor.apply(this, arguments);
+      return _ref1;
+    }
+
+    RadialGradientModel.prototype.toAttr = function() {
+      var attrs;
+      attrs = {};
+      attrs["cx"] = this.get("cx") + "%";
+      attrs["cy"] = this.get("cy") + "%";
+      attrs["r"] = this.get("r") + "%";
+      attrs["fx"] = this.get("fx") + "%";
+      attrs["fy"] = this.get("fy") + "%";
+      attrs["spreadMethod"] = this.get("spreadMethod");
+      attrs["gradientUnits"] = this.get("gradientUnits");
+      return attrs;
+    };
+
+    return RadialGradientModel;
+
+  })(Backbone.Model);
+
+  this.GradientStopModel = (function(_super) {
+    __extends(GradientStopModel, _super);
+
+    function GradientStopModel() {
+      this.toAttr = __bind(this.toAttr, this);
+      _ref2 = GradientStopModel.__super__.constructor.apply(this, arguments);
+      return _ref2;
+    }
+
+    GradientStopModel.prototype.toAttr = function() {
+      var attrs;
+      attrs = {};
+      attrs["offset"] = this.get("offset");
+      attrs["stop-color"] = this.get("color");
+      attrs["stop-opacity"] = this.get("opacity");
+      return attrs;
+    };
+
+    return GradientStopModel;
+
+  })(Backbone.Model);
+
+  this.GradientStopCollection = (function(_super) {
+    __extends(GradientStopCollection, _super);
+
+    function GradientStopCollection() {
+      _ref3 = GradientStopCollection.__super__.constructor.apply(this, arguments);
+      return _ref3;
+    }
+
+    GradientStopCollection.prototype.model = GradientStopModel;
+
+    return GradientStopCollection;
+
+  })(Backbone.Collection);
+
+  this.GradientPointControl = (function(_super) {
+    __extends(GradientPointControl, _super);
+
+    function GradientPointControl() {
+      this.render = __bind(this.render, this);
+      this.getRenderPosition = __bind(this.getRenderPosition, this);
+      this._getItemCoordinateMatrix = __bind(this._getItemCoordinateMatrix, this);
+      this.mouseUp = __bind(this.mouseUp, this);
+      this.itemBBoxPoints = __bind(this.itemBBoxPoints, this);
+      this.mouseMove = __bind(this.mouseMove, this);
+      this.onMouseDown = __bind(this.onMouseDown, this);
+      this.initialize = __bind(this.initialize, this);
+      _ref4 = GradientPointControl.__super__.constructor.apply(this, arguments);
+      return _ref4;
+    }
+
+    GradientPointControl.prototype.events = function() {
+      return {
+        "mousedown": "onMouseDown"
+      };
+    };
+
+    GradientPointControl.prototype.initialize = function() {
+      this.type = this.options.type;
+      this.x_attr = this.options.x_attr;
+      this.y_attr = this.options.y_attr;
+      return this.setStyle();
+    };
+
+    GradientPointControl.prototype.setStyle = function() {
+      return $(this.el).attr({
+        "stroke": "black",
+        "stroke-width": "1",
+        "fill": "white",
+        "opacity": 0.5,
+        "width": 16,
+        "height": 16,
+        "x": 0,
+        "y": 0
+      });
+    };
+
+    GradientPointControl.prototype.onMouseDown = function(e) {
+      this.pre_position = e;
+      e.preventDefault();
+      e.stopPropagation();
+      $(document).mousemove(this.mouseMove);
+      return $(document).mouseup(this.mouseUp);
+    };
+
+    GradientPointControl.prototype.mouseMove = function(e) {
+      var matrix, mouse_pos, point, points, scale_per;
+      e.preventDefault();
+      e.stopPropagation();
+      mouse_pos = SVGUtil.createPoint(e.pageX, e.pageY);
+      points = this.itemBBoxPoints();
+      point = SVGUtil.createPoint(mouse_pos.x - points[0].x, mouse_pos.y - points[0].y);
+      matrix = this._getItemCoordinateMatrix();
+      scale_per = point.matrixTransform(matrix.inverse());
+      this.model.set(this.x_attr, scale_per.x * 100);
+      return this.model.set(this.y_attr, scale_per.y * 100);
+    };
+
+    GradientPointControl.prototype.itemBBoxPoints = function() {
+      var item;
+      item = this.model.get("item");
+      return item._getMatrixBBoxPoints(item.getScreenCTM());
+    };
+
+    GradientPointControl.prototype.mouseUp = function(e) {
+      $(document).unbind('mousemove', this.mouseMove);
+      return $(document).unbind('mouseup', this.mouseUp);
+    };
+
+    GradientPointControl.prototype._getItemCoordinateMatrix = function() {
+      var m, points;
+      points = this.itemBBoxPoints();
+      m = SVGUtil.SVG.createSVGMatrix();
+      m.a = points[2].x - points[0].x;
+      m.b = points[2].y - points[0].y;
+      m.c = points[1].x - points[0].x;
+      m.d = points[1].y - points[0].y;
+      return m;
+    };
+
+    GradientPointControl.prototype.getRenderPosition = function() {
+      var matrix, point, points, x, y;
+      points = this.model.get("item").getBBoxPoints();
+      x = this.model.get(this.x_attr) / 100;
+      y = this.model.get(this.y_attr) / 100;
+      point = SVGUtil.createPoint(x, y);
+      matrix = this._getItemCoordinateMatrix();
+      point = point.matrixTransform(matrix);
+      x = points[0].x + point.x;
+      y = points[0].y + point.y;
+      return SVGUtil.createPoint(x, y);
+    };
+
+    GradientPointControl.prototype.render = function() {
+      var point;
+      point = this.getRenderPosition();
+      return this.$el.attr({
+        "x": point.x - 8,
+        "y": point.y - 8
+      });
+    };
+
+    return GradientPointControl;
+
+  })(Backbone.View);
+
+  this.GradientControlBase = (function(_super) {
+    __extends(GradientControlBase, _super);
+
+    function GradientControlBase() {
+      this._applyGradientToItem = __bind(this._applyGradientToItem, this);
+      this._getGradientElement = __bind(this._getGradientElement, this);
+      this._appendElement = __bind(this._appendElement, this);
+      this._createStopModels = __bind(this._createStopModels, this);
+      this._toNumber = __bind(this._toNumber, this);
+      this._getGradientStops = __bind(this._getGradientStops, this);
+      _ref5 = GradientControlBase.__super__.constructor.apply(this, arguments);
+      return _ref5;
+    }
+
+    GradientControlBase.prototype._getGradientStops = function(model) {
+      var _this = this;
+      return model.get("stops").map(function(stop) {
+        var stop_el;
+        stop_el = SVGUtil.createTag("stop");
+        $(stop_el).attr(stop.toAttr());
+        return stop_el;
+      });
+    };
+
+    GradientControlBase.prototype._toNumber = function(str, instead) {
+      if (instead == null) {
+        instead = 0;
+      }
+      if (str) {
+        return Number(str.replace(/[^0-9.]/, ""));
+      } else {
+        return instead;
+      }
+    };
+
+    GradientControlBase.prototype._createStopModels = function(grad_el) {
+      var stops, stops_el,
+        _this = this;
+      stops_el = $(grad_el).find("stop").get();
+      stops = stops_el.map(function(elm) {
+        elm = $(elm);
+        return new GradientStopModel({
+          offset: elm.attr("offset"),
+          color: elm.attr("stop-color"),
+          opacity: elm.attr("stop-opacity")
+        });
+      });
+      return new GradientStopCollection(stops);
+    };
+
+    GradientControlBase.prototype._appendElement = function(tag_name) {
+      var element;
+      element = SVGUtil.createTag(tag_name);
+      this.$el.append(element);
+      return element;
+    };
+
+    GradientControlBase.prototype._getGradientElement = function(model, element) {
+      var attr, gradient;
+      gradient = SVGUtil.createTag(element);
+      attr = model.toAttr();
+      $(gradient).attr(_.omit(attr, ["spreadMethod", "gradientUnits"]));
+      gradient.setAttributeNS(null, "spreadMethod", attr["spreadMethod"]);
+      gradient.setAttributeNS(null, "gradientUnits", attr["gradientUnits"]);
+      return gradient;
+    };
+
+    GradientControlBase.prototype._applyGradientToItem = function(model, item, element) {
+      var grad, grad_el, grad_id, stops,
+        _this = this;
+      if (!item) {
+        return;
+      }
+      grad_id = $(item.el).attr("id") + "-grad";
+      grad_el = $("#" + grad_id);
+      grad_el.attr(model.toAttr());
+      grad = this._getGradientElement(model, element);
+      stops = this._getGradientStops(model);
+      if (grad_el.length > 0) {
+        grad_el.remove();
+      }
+      $("#item-defs").append(grad);
+      stops.forEach(function(stop) {
+        return $(grad).append(stop);
+      });
+      return $(grad).attr("id", grad_id);
+    };
+
+    return GradientControlBase;
+
+  })(Backbone.View);
+
+  this.RadialGradientControl = (function(_super) {
+    __extends(RadialGradientControl, _super);
+
+    function RadialGradientControl() {
+      this.render = __bind(this.render, this);
+      this._getGradientModel = __bind(this._getGradientModel, this);
+      this.setItem = __bind(this.setItem, this);
+      this.initialize = __bind(this.initialize, this);
+      _ref6 = RadialGradientControl.__super__.constructor.apply(this, arguments);
+      return _ref6;
+    }
+
+    RadialGradientControl.prototype.initialize = function() {};
+
+    RadialGradientControl.prototype.setItem = function(item) {
+      var _this = this;
+      this.stopListening();
+      if (!item) {
+        return;
+      }
+      this.item = item;
+      this.grad_model = this._getGradientModel(item);
+      if (this.point1) {
+        this.point1.remove();
+      }
+      if (this.point2) {
+        this.point2.remove();
+      }
+      this.point1 = new GradientPointControl({
+        el: this._appendElement('rect'),
+        model: this.grad_model,
+        x_attr: "cx",
+        y_attr: "cy"
+      });
+      this.point2 = new GradientPointControl({
+        el: this._appendElement('rect'),
+        model: this.grad_model,
+        x_attr: "fx",
+        y_attr: "fy"
+      });
+      this.render();
+      this.listenTo(item, "change", this.render);
+      this.listenTo(this.grad_model, "change", this.render);
+      return this.listenTo(this.grad_model, "change", function() {
+        return _this._applyGradientToItem(_this.grad_model, item, "radialGradient");
+      });
+    };
+
+    RadialGradientControl.prototype._getGradientModel = function(item) {
+      var cx, cy, fx, fy, grad_el, grad_id, gradient, r, spread, stops, unit;
+      grad_id = $(item.el).attr("id") + "-grad";
+      grad_el = $("#" + grad_id);
+      if (grad_el) {
+        cx = this._toNumber(grad_el.attr("cx"), 50);
+        cy = this._toNumber(grad_el.attr("cy"), 50);
+        fx = this._toNumber(grad_el.attr("fx"), 50);
+        fy = this._toNumber(grad_el.attr("fy"), 50);
+        r = this._toNumber(grad_el.attr("r"), 50);
+        spread = grad_el[0].getAttributeNS(null, "spreadMethod");
+        if (spread === "") {
+          spread = "pad";
+        }
+        unit = grad_el[0].getAttributeNS(null, "gradientUnits");
+        console.log("unit", unit);
+        if (unit === "") {
+          unit = "objectBoundingBox";
+        }
+        stops = this._createStopModels(grad_el);
+        gradient = new RadialGradientModel({
+          item: item,
+          isNew: false,
+          cx: cx,
+          cy: cy,
+          fx: fx,
+          fy: fy,
+          r: r,
+          spreadMethod: spread,
+          gradientUnits: unit,
+          stops: stops
+        });
+      } else {
+        gradient = new RadialGradientModel({
+          item: item,
+          isNew: true,
+          cx: 50,
+          cy: 50,
+          fx: 50,
+          fy: 50,
+          r: 50,
+          spreadMethod: "pad",
+          gradientUnits: "objectBoundingBox",
+          stops: []
+        });
+      }
+      return gradient;
+    };
+
+    RadialGradientControl.prototype.render = function() {
+      this.point1.render();
+      return this.point2.render();
+    };
+
+    return RadialGradientControl;
+
+  })(GradientControlBase);
+
+  this.LinearGradientControl = (function(_super) {
+    __extends(LinearGradientControl, _super);
+
+    function LinearGradientControl() {
+      this.render = __bind(this.render, this);
+      this._getGradientModel = __bind(this._getGradientModel, this);
+      this.setItem = __bind(this.setItem, this);
+      this.initialize = __bind(this.initialize, this);
+      _ref7 = LinearGradientControl.__super__.constructor.apply(this, arguments);
+      return _ref7;
+    }
+
+    LinearGradientControl.prototype.initialize = function() {};
+
+    LinearGradientControl.prototype.setItem = function(item) {
+      var _this = this;
+      this.stopListening();
+      if (!item) {
+        return;
+      }
+      this.item = item;
+      this.grad_model = this._getGradientModel(item);
+      if (this.point1) {
+        this.point1.remove();
+      }
+      if (this.point2) {
+        this.point2.remove();
+      }
+      this.point1 = new GradientPointControl({
+        el: this._appendElement('rect'),
+        model: this.grad_model,
+        x_attr: "x1",
+        y_attr: "y1"
+      });
+      this.point2 = new GradientPointControl({
+        el: this._appendElement('rect'),
+        model: this.grad_model,
+        x_attr: "x2",
+        y_attr: "y2"
+      });
+      this.render();
+      this.listenTo(item, "change", this.render);
+      this.listenTo(this.grad_model, "change", this.render);
+      return this.listenTo(this.grad_model, "change", function() {
+        return _this._applyGradientToItem(_this.grad_model, item, "linearGradient");
+      });
+    };
+
+    LinearGradientControl.prototype._getGradientModel = function(item) {
+      var grad_el, grad_id, gradient, spread, stops, unit, x1, x2, y1, y2;
+      grad_id = $(item.el).attr("id") + "-grad";
+      grad_el = $("#" + grad_id);
+      if (grad_el) {
+        x1 = this._toNumber(grad_el.attr("x1"), 0);
+        y1 = this._toNumber(grad_el.attr("y1"), 0);
+        x2 = this._toNumber(grad_el.attr("x2"), 100);
+        y2 = this._toNumber(grad_el.attr("y2"), 0);
+        stops = this._createStopModels(grad_el);
+        spread = grad_el[0].getAttributeNS(null, "spreadMethod");
+        if (spread === "") {
+          spread = "pad";
+        }
+        unit = grad_el[0].getAttributeNS(null, "gradientUnits");
+        console.log("unit", unit);
+        if (unit === "") {
+          unit = "objectBoundingBox";
+        }
+        gradient = new LinearGradientModel({
+          item: item,
+          isNew: false,
+          x1: x1,
+          y1: y1,
+          x2: x2,
+          y2: y2,
+          spreadMethod: spread,
+          gradientUnits: unit,
+          stops: stops
+        });
+      } else {
+        gradient = new LinearGradientModel({
+          item: item,
+          isNew: true,
+          x1: 0,
+          y1: 0,
+          x2: 100,
+          y2: 0,
+          spreadMethod: "pad",
+          gradientUnits: "objectBoundingBox",
+          stops: []
+        });
+      }
+      return gradient;
+    };
+
+    LinearGradientControl.prototype.render = function() {
+      this.point1.render();
+      return this.point2.render();
+    };
+
+    return LinearGradientControl;
+
+  })(GradientControlBase);
+
+}).call(this);
+
+(function() {
+  var _ref,
+    __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; },
+    __hasProp = {}.hasOwnProperty,
+    __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
+
+  this.GradientToolView = (function(_super) {
+    __extends(GradientToolView, _super);
+
+    function GradientToolView() {
+      this.render = __bind(this.render, this);
+      this.hide_control = __bind(this.hide_control, this);
+      this.disable = __bind(this.disable, this);
+      this.linearMode = __bind(this.linearMode, this);
+      this.radialMode = __bind(this.radialMode, this);
+      this.onChangeR = __bind(this.onChangeR, this);
+      this.onChangeUnit = __bind(this.onChangeUnit, this);
+      this.onChangeSpread = __bind(this.onChangeSpread, this);
+      this.setItem = __bind(this.setItem, this);
+      this.changeControl = __bind(this.changeControl, this);
+      this.initialize = __bind(this.initialize, this);
+      _ref = GradientToolView.__super__.constructor.apply(this, arguments);
+      return _ref;
+    }
+
+    GradientToolView.prototype.events = {
+      "click #linear-gradient-button": "linearMode",
+      "click #radial-gradient-button": "radialMode",
+      "change #grad-spread": "onChangeSpread",
+      "change #grad-r": "onChangeR",
+      "change #grad-unit": "onChangeUnit"
+    };
+
+    GradientToolView.prototype.initialize = function() {
+      this.linear_gradient_control = new LinearGradientControl({
+        el: $("#linear-gradient-control")
+      });
+      this.radial_gradient_control = new RadialGradientControl({
+        el: $("#radial-gradient-control")
+      });
+      this.gradient_control = this.linear_gradient_control;
+      this.radial_button_el = $("#radial-gradient-button");
+      this.linear_button_el = $("#linear-gradient-button");
+      this.grad_r_el = $("#grad-r");
+      this.grad_spread_el = $("#grad-spread");
+      return this.grad_unit_el = $("#grad-unit");
+    };
+
+    GradientToolView.prototype.changeControl = function(control) {
+      var item;
+      console.log("changeControl:(control)", this);
+      item = cloneControlView.firstOriginalItem();
+      if (this.gradient_control !== control) {
+        this.gradient_control = control;
+        return this.setItem(item);
+      }
+    };
+
+    GradientToolView.prototype.setItem = function(item) {
+      this.gradient_control.setItem(item);
+      return this.render();
+    };
+
+    GradientToolView.prototype.onChangeSpread = function() {
+      var spread;
+      spread = this.grad_spread_el.val();
+      this.gradient_control.grad_model.set("spreadMethod", spread);
+      return console.log("onChangeSpread", spread);
+    };
+
+    GradientToolView.prototype.onChangeUnit = function() {
+      var unit;
+      unit = this.grad_unit_el.val();
+      this.gradient_control.grad_model.set("gradientUnits", unit);
+      return console.log("onChangeUnit", unit);
+    };
+
+    GradientToolView.prototype.onChangeR = function() {
+      var r;
+      r = this.grad_r_el.val();
+      this.gradient_control.grad_model.set("r", r);
+      return console.log("onChangeR", r);
+    };
+
+    GradientToolView.prototype.radialMode = function() {
+      return this.changeControl(this.radial_gradient_control);
+    };
+
+    GradientToolView.prototype.linearMode = function() {
+      return this.changeControl(this.linear_gradient_control);
+    };
+
+    GradientToolView.prototype.disable = function() {
+      this.$el.hide();
+      return this.hide_control();
+    };
+
+    GradientToolView.prototype.hide_control = function() {
+      this.radial_gradient_control.$el.hide();
+      this.linear_gradient_control.$el.hide();
+      this.radial_button_el.css("background-color", "");
+      return this.linear_button_el.css("background-color", "");
+    };
+
+    GradientToolView.prototype.render = function() {
+      var isLinear, model;
+      this.$el.show();
+      this.hide_control();
+      if (this.gradient_control && this.gradient_control.grad_model) {
+        model = this.gradient_control.grad_model;
+        this.grad_r_el.val(model.get("r"));
+        this.grad_spread_el.val(model.get("spreadMethod"));
+        this.grad_unit_el.val(model.get("gradientUnits"));
+      } else {
+        return;
+      }
+      isLinear = this.gradient_control === this.linear_gradient_control;
+      if (isLinear) {
+        this.linear_gradient_control.$el.show();
+        return this.linear_button_el.css("background-color", "#ebebeb");
+      } else {
+        this.radial_gradient_control.$el.show();
+        return this.radial_button_el.css("background-color", "#ebebeb");
+      }
+    };
+
+    return GradientToolView;
 
   })(Backbone.View);
 

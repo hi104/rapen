@@ -178,8 +178,8 @@ $(document).ready(() =>
     $.contextMenu({
         selector: "#svg-canvas-base",
         items: {
-            flipX:   {  name: "flipX",   callback: ((key, opt) =>  cloneControlView.getControlItem().flipX()) },
-            flipY:   {  name: "flipY",   callback: ((key, opt) =>  cloneControlView.getControlItem().flipY()) },
+            flipX:     {  name: "flipX",     callback: ((key, opt) =>  cloneControlView.getControlItem().flipX()) },
+            flipY:     {  name: "flipY",     callback: ((key, opt) =>  cloneControlView.getControlItem().flipY()) },
             forward:   {  name: "forward",   callback: ((key, opt) =>  orderControl.bringForward()) },
             back:      {  name: "back",      callback: ((key, opt) =>  orderControl.bringBack()) },
             top:       {  name: "top",       callback: ((key, opt) =>  orderControl.toTop()) },

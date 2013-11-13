@@ -6,7 +6,8 @@ class @EventManager
         @modes = {
             "control" : new ElementControlMode(@),
             "text" : new TextEditMode(@),
-            "path" : new PathEditMode(@)
+            "path" : new PathEditMode(@),
+            "grad" : new GradientEditMode(@)
         }
 
         for name, mode of @modes
