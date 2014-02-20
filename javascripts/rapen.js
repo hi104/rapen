@@ -631,7 +631,7 @@
         this.itemControl.setItem(item);
         this.line_list_view.$el.hide();
         this.$el.hide();
-      } else {
+      } else if (this.item_list.length > 0) {
         this.listenTo(this.item, "change", this.update);
         this.itemControl.setItem(this.item);
         this.line_list_view.$el.show();
@@ -786,7 +786,6 @@
       } else {
         this.$el.attr("opacity", 0);
       }
-      this.itemControl.show();
       this.itemControl.render();
       return this.line_list_view.render();
     };
@@ -2136,6 +2135,11 @@
     };
 
     ItemControl.prototype.render = function() {
+      if (this.selectitem) {
+        this.show();
+      } else {
+        this.hide();
+      }
       if (!this.selectitem) {
         return;
       }
@@ -6789,7 +6793,8 @@
         }
       }
     });
-    return initPropertyEdit();
+    initPropertyEdit();
+    return _this.cloneControlView.hide();
   });
 
   this.excutePathBoolean = function(operate) {

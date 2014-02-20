@@ -23,8 +23,7 @@ class @CloneControlView extends Backbone.View
         @itemControl = new ItemControl({
             el:@options.select_el,
             manager:@
-            })
-
+        })
         @mode = ""
 
     getControl:() => @itemControl
@@ -41,7 +40,7 @@ class @CloneControlView extends Backbone.View
             @itemControl.setItem(item)
             @line_list_view.$el.hide()
             @$el.hide()
-        else
+        else if @item_list.length > 0
             @listenTo(@item,"change", @update)
             @itemControl.setItem(@item)
             @line_list_view.$el.show()
@@ -148,7 +147,6 @@ class @CloneControlView extends Backbone.View
             @$el.attr("opacity", 0.5)
         else
             @$el.attr("opacity", 0)
-        @itemControl.show()
         @itemControl.render()
         @line_list_view.render()
 

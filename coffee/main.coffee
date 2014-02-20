@@ -196,7 +196,7 @@ $(document).ready(() =>
     });
 
     initPropertyEdit()
-
+    @cloneControlView.hide()
 )
 
 @excutePathBoolean = (operate) =>

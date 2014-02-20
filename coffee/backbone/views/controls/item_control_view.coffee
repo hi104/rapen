@@ -86,13 +86,10 @@ class @ItemControl extends Backbone.View
         @select_line_view.$el.show() if @select_line_view
 
     render: () ->
-
-        # if @visible
-        #     @$el.show()
-        #     @select_line_view.$el.show() if @select_line_view
-        # else
-        #     @$el.hide()
-        #     @select_line_view.$el.hide() if @select_line_view
+        if @selectitem
+            @show()
+        else
+            @hide()
 
         return unless @selectitem
 
