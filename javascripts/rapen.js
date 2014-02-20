@@ -554,7 +554,7 @@
 
     function CloneControlView() {
       this.attachDragEvent = __bind(this.attachDragEvent, this);
-      this._copyItems = __bind(this._copyItems, this);
+      this._createCopyItems = __bind(this._createCopyItems, this);
       this.attachCopyDragEvent = __bind(this.attachCopyDragEvent, this);
       this._copyMode = __bind(this._copyMode, this);
       this.onEvent = __bind(this.onEvent, this);
@@ -866,13 +866,13 @@
         $(document).unbind('mousemove', sender.onDragging);
         $(document).unbind('mouseup', ondrop);
         _this.$el.attr("opacity", 0);
-        _this.initControls(_this._copyItems());
+        _this.initControls(_this._createCopyItems());
         return _this.cancelEvent(e);
       };
       return $(document).mouseup(ondrop);
     };
 
-    CloneControlView.prototype._copyItems = function() {
+    CloneControlView.prototype._createCopyItems = function() {
       var copy_items, matrix, orderd_list,
         _this = this;
       matrix = this.item.getLocalMatrix();
@@ -2434,7 +2434,6 @@
 
   this.GradientEditMode = (function() {
     function GradientEditMode(maneger) {
-      this.disable = __bind(this.disable, this);
       this.onStop = __bind(this.onStop, this);
       this.onStart = __bind(this.onStart, this);
       this.onEvent = __bind(this.onEvent, this);
@@ -2461,8 +2460,6 @@
     GradientEditMode.prototype.onStop = function() {
       return this.gradient_tool.disable();
     };
-
-    GradientEditMode.prototype.disable = function() {};
 
     GradientEditMode.prototype.cancelEvent = function(e) {
       e.preventDefault();
@@ -5636,7 +5633,7 @@
           r: 50,
           spreadMethod: "pad",
           gradientUnits: "objectBoundingBox",
-          stops: []
+          stops: new GradientStopCollection([])
         });
       }
       return gradient;
@@ -5739,7 +5736,7 @@
           y2: 0,
           spreadMethod: "pad",
           gradientUnits: "objectBoundingBox",
-          stops: []
+          stops: new GradientStopCollection([])
         });
       }
       return gradient;
@@ -6625,6 +6622,9 @@
     });
     key("v", function(e) {
       return event_manager.setMode('path');
+    });
+    key("g", function(e) {
+      return event_manager.setMode('grad');
     });
     move_item_position = function(pos) {
       if (cloneControlView.item_list.length > 0) {
