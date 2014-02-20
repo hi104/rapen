@@ -129,7 +129,6 @@ class @CloneControlView extends Backbone.View
         @$el.hide()
         @itemControl.hide()
         @line_list_view.$el.hide()
-        # @line_list_view.render()
 
     show:() =>
         @$el.show()
@@ -216,11 +215,11 @@ class @CloneControlView extends Backbone.View
             $(document).unbind('mousemove', sender.onDragging)
             $(document).unbind('mouseup', ondrop)
             @$el.attr("opacity", 0)
-            @initControls(@_copyItems())
+            @initControls(@_createCopyItems())
             @cancelEvent(e)
         $(document).mouseup(ondrop)
 
-    _copyItems:() =>
+    _createCopyItems:() =>
         matrix = @item.getLocalMatrix()
         copy_items = []
         orderd_list = @item_list.sortBy((item) =>

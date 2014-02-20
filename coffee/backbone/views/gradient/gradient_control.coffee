@@ -187,7 +187,6 @@ class @RadialGradientControl extends GradientControlBase
         @item = item
         @grad_model = @_getGradientModel(item)
 
-
         @point1.remove() if @point1
         @point2.remove() if @point2
 
@@ -256,7 +255,7 @@ class @RadialGradientControl extends GradientControlBase
                 r:50,
                 spreadMethod:"pad",
                 gradientUnits:"objectBoundingBox",
-                stops:[]
+                stops:new GradientStopCollection([])
             })
 
         gradient
@@ -340,7 +339,7 @@ class @LinearGradientControl extends GradientControlBase
                 y2:0,
                 spreadMethod:"pad",
                 gradientUnits:"objectBoundingBox",
-                stops:[]
+                stops:new GradientStopCollection([])
             })
 
         gradient
