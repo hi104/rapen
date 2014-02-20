@@ -16,8 +16,6 @@ class @GradientEditMode
     onStop:() =>
         @gradient_tool.disable()
 
-    disable:()=>
-
     cancelEvent:(e)->
         e.preventDefault()
         e.stopPropagation()
