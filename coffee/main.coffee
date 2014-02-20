@@ -118,6 +118,7 @@ $(document).ready(() =>
     key("c", (e) => event_manager.setMode('control'))
     key("t", (e) => event_manager.setMode('text'))
     key("v", (e) => event_manager.setMode('path'))
+    key("g", (e) => event_manager.setMode('grad'))
 
     move_item_position = (pos) =>
         if cloneControlView.item_list.length > 0
