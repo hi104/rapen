@@ -20,6 +20,7 @@
     <script src="javascripts/lib/keymaster.min.js"></script>
     <script src="javascripts/lib/paper.js"></script>
     <script src="javascripts/lib/spectrum.js"></script>
+    <script src="javascripts/lib/uuid.core.js"></script>
 
     <script src="javascripts/setup.js"></script>
     <script src="javascripts/rapen.js"></script>
@@ -36,15 +37,16 @@
               <span class="caret"></span>
             </button>
             <ul class="dropdown-menu">
+
+              <li><a id="open-file-button" href="#">
+                  <span class="glyphicon glyphicon-open"></span>
+                  Open (.svg)</a>
+              </li>
               <li><a id="export-button" href="#">
                   <span class="glyphicon glyphicon-export"></span>
                   Export
                 </a>
               </li>
-              <!-- <li><a id="open-button" href="#"> -->
-              <!--     <span class="glyphicon glyphicon-open"></span> -->
-              <!--     Open (.svg)</a> -->
-              <!-- </li> -->
               <!-- <li><a id="save-button" href="#"> -->
               <!--     <span class="glyphicon glyphicon-save"></span> -->
               <!--     Save</a> -->
@@ -59,10 +61,6 @@
                   data-toggle="modal" data-target="#settingModal">
             <span class="glyphicon glyphicon-cog"></span>
           </button>
-          <button id="grad-button" type="button"
-                  class="btn btn-default">
-            <span class="glyphicon glyphicon-adjust"></span>
-          </button>
         </div>
         <div class="btn-group" style="padding:5px">
           <select id="zoom-control"></select>
@@ -76,7 +74,6 @@
           </svg>
           <svg data-mode="text" id="text-mode-btn" width="32px" height="32px" viewBox="-10 -10 80 80" style="" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns="http://www.w3.org/2000/svg">                 <g transform="matrix(1 0 0 1 0 0)"><path d="M5.03183,22.20168L5.68224,7.75404L56.2001,7.83624L56.76706,22.29889L55.19405,22.31895c-1.8355,-11.45581 -6.37688,-10.60413 -20.0898,-10.60413L35.16916,60.31172c-0.12766,7.41591 2.82908,7.49408 8.6047,7.52705L43.78021,69.53351L17.63067,69.53139L17.63067,67.93557c5.10221,-0.00424 8.81069,-0.14691 8.77771,-7.89614L26.47645,11.66542c-14.16519,-0.05453 -17.99423,-0.52283 -19.73918,10.49148z" transform="matrix(1 0 0 1 0.557572 -1.95154)" opacity="" fill-rule="evenodd"></path></g>              </svg>
           <svg data-mode="grad" id="grad-mode-btn" width="32px" height="32px" viewBox="120 5 100 100" style="" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns="http://www.w3.org/2000/svg">
-            <defs id="item-defs"></defs>
             <g transform="matrix(1.93369 0 0 1.93369 110.792 4.92459)"><rect x="0" y="0" width="100.00001192092896" height="100.00001192092896" fill="white" stroke="black" stroke-width="3" id="item-3" class="svg-control-item" transform="matrix(0.392346 0 0 0.392346 10.5189 10.0259)"></rect><path d="M100,200L200,200L200,100z" id="item-1" class="svg-control-item" transform="matrix(0.392346 0 0 0.392346 -28.7157 -29.2088)" stroke="#000000" stroke-width="0"></path></g>              </svg>
         </div>
         <div id="gradient-tool">
@@ -256,5 +253,35 @@
         </div><!-- /.modal-content -->
       </div><!-- /.modal-dialog -->
     </div><!-- /.modal -->
+
+    <!-- File Modal -->
+    <div class="modal" id="fileModal" tabindex="-1" role="dialog" aria-labelledby="settingModalLabel" aria-hidden="true">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+            <h4 class="modal-title" id="fileModalLabel">Open File</h4>
+          </div>
+          <div class="modal-body">
+            <form class="form-horizontal" id="file-form" role="form" onsubmit="return false;">
+              <div class="form-group">
+                <div class="col-sm-offset-1 col-sm-10">
+                  <div class="checkbox">
+                    <label>
+                      <input id="file-select" type="file">
+                    </label>
+                  </div>
+                </div>
+              </div>
+            </form>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+          </div>
+        </div><!-- /.modal-content -->
+      </div><!-- /.modal-dialog -->
+    </div><!-- /.modal -->
+
+
   </body>
 </html>

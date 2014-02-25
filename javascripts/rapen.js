@@ -4571,6 +4571,55 @@
     __hasProp = {}.hasOwnProperty,
     __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
 
+  this.OpenFileView = (function(_super) {
+    __extends(OpenFileView, _super);
+
+    function OpenFileView() {
+      this.onChange = __bind(this.onChange, this);
+      _ref = OpenFileView.__super__.constructor.apply(this, arguments);
+      return _ref;
+    }
+
+    OpenFileView.prototype.events = {
+      "change #file-select": "onChange"
+    };
+
+    OpenFileView.prototype.onChange = function(e) {
+      var $file_select, file, util;
+      $("#fileModal").modal('hide');
+      $file_select = $("#file-select");
+      file = $file_select.get(0).files[0];
+      $file_select.val("");
+      util = new FileUtil;
+      return util.load(file, function(parsed) {
+        var elem, _i, _j, _len, _len1, _ref1, _ref2, _results;
+        _ref1 = parsed.items;
+        for (_i = 0, _len = _ref1.length; _i < _len; _i++) {
+          elem = _ref1[_i];
+          SvgCanvasBase.addElement(elem);
+        }
+        _ref2 = parsed.defs;
+        _results = [];
+        for (_j = 0, _len1 = _ref2.length; _j < _len1; _j++) {
+          elem = _ref2[_j];
+          _results.push($("#item-defs").append(elem));
+        }
+        return _results;
+      });
+    };
+
+    return OpenFileView;
+
+  })(Backbone.View);
+
+}).call(this);
+
+(function() {
+  var _ref,
+    __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; },
+    __hasProp = {}.hasOwnProperty,
+    __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
+
   this.SvgCanvas = (function(_super) {
     __extends(SvgCanvas, _super);
 
@@ -4615,9 +4664,7 @@
     };
 
     SvgCanvas.prototype.generateId = function() {
-      var id;
-      id = this.unique_index++;
-      return "item-" + id;
+      return "item-" + UUID.generate();
     };
 
     SvgCanvas.prototype.getItems = function() {
@@ -4641,7 +4688,9 @@
     SvgCanvas.prototype.addItem = function(item) {
       var elm;
       elm = item.el;
-      $(elm).attr("id", this.generateId());
+      if (!$(elm).attr("id")) {
+        $(elm).attr("id", this.generateId());
+      }
       $(elm).attr("class", "svg-control-item");
       $(this.mainCanvas).append(elm);
       this.item_list.add(item);
@@ -6188,12 +6237,64 @@
 }).call(this);
 
 (function() {
+  this.FileUtil = (function() {
+    function FileUtil() {}
+
+    FileUtil.prototype.load = function(file, callback) {
+      var reader,
+        _this = this;
+      reader = new FileReader;
+      reader.onload = function(e) {
+        var parsed, svg;
+        svg = e.target.result;
+        parsed = _this.parse($(svg));
+        if (callback) {
+          return callback(parsed);
+        }
+      };
+      return reader.readAsText(file);
+    };
+
+    FileUtil.prototype.parse = function(container) {
+      var defs, elem, items, _i, _len, _ref;
+      defs = [];
+      items = [];
+      _ref = container.children();
+      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+        elem = _ref[_i];
+        if (elem.nodeName === "defs") {
+          defs.push(elem);
+        } else {
+          items.push(elem);
+        }
+      }
+      return {
+        defs: defs,
+        items: items
+      };
+    };
+
+    return FileUtil;
+
+  })();
+
+}).call(this);
+
+(function() {
   this.SvgExporter = (function() {
     function SvgExporter() {}
 
     SvgExporter.prototype.toSvg = function(element, filename, options) {
-      var serializer, svg_clone, svg_xml, url, url_prefix;
+      var $svg_clone, canvas, elem, serializer, svg_clone, svg_xml, url, url_prefix, _i, _len, _ref;
       svg_clone = element.cloneNode(true);
+      $svg_clone = $(svg_clone);
+      canvas = $svg_clone.find("#svg-canvas");
+      _ref = canvas.children();
+      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+        elem = _ref[_i];
+        $svg_clone.append(elem);
+      }
+      canvas.remove();
       serializer = new XMLSerializer();
       $(svg_clone).attr("id", "");
       $(svg_clone).attr("style", "");
@@ -6557,6 +6658,9 @@
     $("#export-button").click(function(e) {
       return SvgExport();
     });
+    $("#open-file-button").click(function(e) {
+      return $("#fileModal").modal();
+    });
     _this.grid_setting = new GridSetting({
       width: 800,
       height: 600,
@@ -6575,6 +6679,9 @@
       el: $("#grid-setting")
     });
     _this.grid_setting_view.render();
+    _this.open_file_view = new OpenFileView({
+      el: $("#fileModal")
+    });
     _this.snap_line_view = new SnapLineView({
       el: $("#snap-line-view")
     });

@@ -13,8 +13,8 @@ class @SvgCanvas extends Backbone.View
         @item_list.bind('add', @onAddItem)
 
     generateId: () => #better use uuid ?
-        id = @unique_index++
-        "item-" + id
+        # id = @unique_index++
+        "item-" + UUID.generate()
 
     getItems:() ->
         @item_list
@@ -29,7 +29,8 @@ class @SvgCanvas extends Backbone.View
 
     addItem:(item) =>
         elm = item.el
-        $(elm).attr("id", @generateId())
+        unless $(elm).attr("id")
+            $(elm).attr("id", @generateId())
         $(elm).attr("class", "svg-control-item")
         $(@mainCanvas).append(elm)
         @item_list.add(item)
