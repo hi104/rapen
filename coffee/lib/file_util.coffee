@@ -4,9 +4,16 @@ class @FileUtil
         reader.onload = (e) =>
             svg = e.target.result
             parsed = @parse($(svg))
-            callback(parsed) if callback
+            callback(parsed)
 
         reader.readAsText file
+
+    loadImageAsURL:(file, callback) ->
+        reader = new FileReader
+        reader.onload = (e) =>
+            callback(e.target.result)
+
+        reader.readAsDataURL file
 
     parse:(container) ->
         defs = []

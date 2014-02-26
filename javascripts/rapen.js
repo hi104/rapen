@@ -917,6 +917,128 @@
     __hasProp = {}.hasOwnProperty,
     __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
 
+  this.ContextMenuView = (function(_super) {
+    __extends(ContextMenuView, _super);
+
+    function ContextMenuView() {
+      this.onItemMenuClick = __bind(this.onItemMenuClick, this);
+      this.onContextMenu = __bind(this.onContextMenu, this);
+      this.initialize = __bind(this.initialize, this);
+      _ref = ContextMenuView.__super__.constructor.apply(this, arguments);
+      return _ref;
+    }
+
+    ContextMenuView.prototype.events = {
+      "contextmenu": "onContextMenu"
+    };
+
+    ContextMenuView.prototype.actions = {
+      "flipX": function() {
+        return cloneControlView.getControlItem().flipX();
+      },
+      "flipY": function() {
+        return cloneControlView.getControlItem().flipY();
+      },
+      "forward": function() {
+        return orderControl.bringForward();
+      },
+      "back": function() {
+        return orderControl.bringBack();
+      },
+      "top": function() {
+        return orderControl.toTop();
+      },
+      "bottom": function() {
+        return orderControl.toBottom();
+      },
+      "group": function() {
+        return SvgCanvasBase.groupSelectedItem();
+      },
+      "ungroup": function() {
+        return SvgCanvasBase.unGroupSelectedItem();
+      },
+      "unite": function() {
+        return excutePathBoolean("unite");
+      },
+      "intersect": function() {
+        return excutePathBoolean("intersect");
+      },
+      "subtract": function() {
+        return excutePathBoolean("subtract");
+      },
+      "divide": function() {
+        return excutePathBoolean("divide");
+      },
+      "exclude": function() {
+        return excutePathBoolean("exclude");
+      }
+    };
+
+    ContextMenuView.prototype.initialize = function() {
+      var _this = this;
+      this.$contextMenu = $("#contextMenu");
+      this.$contextMenu.on("click a", this.onItemMenuClick);
+      return $(document).click(function() {
+        return $("#contextMenu").css("visibility", "hidden");
+      });
+    };
+
+    ContextMenuView.prototype.getPosition = function(e) {
+      var $menu, boundsX, boundsY, menuHeight, menuWidth, mouseX, mouseY, x, y;
+      $menu = this.$contextMenu;
+      mouseX = e.clientX;
+      mouseY = e.clientY;
+      boundsX = $(window).width();
+      boundsY = $(window).height();
+      menuWidth = $menu.find('.dropdown-menu').outerWidth();
+      menuHeight = $menu.find('.dropdown-menu').outerHeight();
+      if (mouseY + menuHeight > boundsY) {
+        y = mouseY - menuHeight + $(window).scrollTop();
+      } else {
+        y = mouseY + $(window).scrollTop();
+      }
+      if ((mouseX + menuWidth > boundsX) && ((mouseX - menuWidth) > 0)) {
+        x = mouseX - menuWidth + $(window).scrollLeft();
+      } else {
+        x = mouseX + $(window).scrollLeft();
+      }
+      return {
+        x: x,
+        y: y
+      };
+    };
+
+    ContextMenuView.prototype.onContextMenu = function(e) {
+      var pos;
+      pos = this.getPosition(e);
+      this.$contextMenu.css({
+        visibility: "visible",
+        left: pos.x,
+        top: pos.y
+      });
+      e.preventDefault();
+      return false;
+    };
+
+    ContextMenuView.prototype.onItemMenuClick = function(e) {
+      var $a, action;
+      $a = $(e.target);
+      action = $a.data("action");
+      return this.actions[action]();
+    };
+
+    return ContextMenuView;
+
+  })(Backbone.View);
+
+}).call(this);
+
+(function() {
+  var _ref,
+    __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; },
+    __hasProp = {}.hasOwnProperty,
+    __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
+
   this.LinePositionControl = (function(_super) {
     __extends(LinePositionControl, _super);
 
@@ -4620,6 +4742,59 @@
     __hasProp = {}.hasOwnProperty,
     __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
 
+  this.OpenImageFileView = (function(_super) {
+    __extends(OpenImageFileView, _super);
+
+    function OpenImageFileView() {
+      this.onChange = __bind(this.onChange, this);
+      _ref = OpenImageFileView.__super__.constructor.apply(this, arguments);
+      return _ref;
+    }
+
+    OpenImageFileView.prototype.events = {
+      "change #image-file-select": "onChange"
+    };
+
+    OpenImageFileView.prototype.onChange = function(e) {
+      var $file_select, file, util,
+        _this = this;
+      $("#imageFileModal").modal('hide');
+      $file_select = $("#image-file-select");
+      file = $file_select.get(0).files[0];
+      $file_select.val("");
+      util = new FileUtil;
+      return util.loadImageAsURL(file, function(image_url) {
+        return SvgCanvasBase.addElement(_this.createImage(image_url));
+      });
+    };
+
+    OpenImageFileView.prototype.createImage = function(image_url) {
+      var image, img;
+      img = new Image();
+      img.onload = function() {
+        return $(image).attr({
+          width: img.width,
+          height: img.height
+        });
+      };
+      img.src = image_url;
+      image = SVGUtil.createTag("image");
+      image.setAttributeNS('http://www.w3.org/1999/xlink', "xlink:href", image_url);
+      return image;
+    };
+
+    return OpenImageFileView;
+
+  })(Backbone.View);
+
+}).call(this);
+
+(function() {
+  var _ref,
+    __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; },
+    __hasProp = {}.hasOwnProperty,
+    __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
+
   this.SvgCanvas = (function(_super) {
     __extends(SvgCanvas, _super);
 
@@ -6248,11 +6423,19 @@
         var parsed, svg;
         svg = e.target.result;
         parsed = _this.parse($(svg));
-        if (callback) {
-          return callback(parsed);
-        }
+        return callback(parsed);
       };
       return reader.readAsText(file);
+    };
+
+    FileUtil.prototype.loadImageAsURL = function(file, callback) {
+      var reader,
+        _this = this;
+      reader = new FileReader;
+      reader.onload = function(e) {
+        return callback(e.target.result);
+      };
+      return reader.readAsDataURL(file);
     };
 
     FileUtil.prototype.parse = function(container) {
@@ -6661,6 +6844,9 @@
     $("#open-file-button").click(function(e) {
       return $("#fileModal").modal();
     });
+    $("#open-image-file-button").click(function(e) {
+      return $("#imageFileModal").modal();
+    });
     _this.grid_setting = new GridSetting({
       width: 800,
       height: 600,
@@ -6681,6 +6867,12 @@
     _this.grid_setting_view.render();
     _this.open_file_view = new OpenFileView({
       el: $("#fileModal")
+    });
+    _this.open_image_file_view = new OpenImageFileView({
+      el: $("#imageFileModal")
+    });
+    _this.contextMenu = new ContextMenuView({
+      el: $("#svg-canvas-base")
     });
     _this.snap_line_view = new SnapLineView({
       el: $("#snap-line-view")
@@ -6817,89 +7009,6 @@
     });
     $(".navbar-fixed-top").hide();
     $(".container-fluid").css("padding-top", "0px");
-    $.contextMenu({
-      selector: "#svg-canvas-base",
-      items: {
-        flipX: {
-          name: "flipX",
-          callback: (function(key, opt) {
-            return cloneControlView.getControlItem().flipX();
-          })
-        },
-        flipY: {
-          name: "flipY",
-          callback: (function(key, opt) {
-            return cloneControlView.getControlItem().flipY();
-          })
-        },
-        forward: {
-          name: "forward",
-          callback: (function(key, opt) {
-            return orderControl.bringForward();
-          })
-        },
-        back: {
-          name: "back",
-          callback: (function(key, opt) {
-            return orderControl.bringBack();
-          })
-        },
-        top: {
-          name: "top",
-          callback: (function(key, opt) {
-            return orderControl.toTop();
-          })
-        },
-        bottom: {
-          name: "bottom",
-          callback: (function(key, opt) {
-            return orderControl.toBottom();
-          })
-        },
-        group: {
-          name: "group",
-          callback: (function(key, opt) {
-            return SvgCanvasBase.groupSelectedItem();
-          })
-        },
-        un_group: {
-          name: "ungroup",
-          callback: (function(key, opt) {
-            return SvgCanvasBase.unGroupSelectedItem();
-          })
-        },
-        unite: {
-          name: "unite",
-          callback: (function(key, opt) {
-            return excutePathBoolean("unite");
-          })
-        },
-        intersect: {
-          name: "intersect",
-          callback: (function(key, opt) {
-            return excutePathBoolean("intersect");
-          })
-        },
-        subtract: {
-          name: "subtract",
-          callback: (function(key, opt) {
-            return excutePathBoolean("subtract");
-          })
-        },
-        divide: {
-          name: "divide",
-          callback: (function(key, opt) {
-            return excutePathBoolean("divide");
-          })
-        },
-        exclude: {
-          name: "exclude",
-          callback: (function(key, opt) {
-            return excutePathBoolean("exclude");
-          })
-        }
-      }
-    });
     initPropertyEdit();
     return _this.cloneControlView.hide();
   });

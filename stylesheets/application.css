@@ -53,3 +53,9 @@ input[type="color"],
      -moz-border-radius: 0px;
           border-radius: 0px;
 }
+
+#contextMenu {
+    position: absolute;
+    /* display:hidden; */
+    visibility:hidden;
+}

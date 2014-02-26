@@ -83,6 +83,10 @@ $(document).ready(() =>
         $("#fileModal").modal()
     )
 
+    $("#open-image-file-button").click((e)->
+        $("#imageFileModal").modal()
+    )
+
     @grid_setting = new GridSetting(width:800, height:600, grid_size:10, visible:true)
     @grid_view = new SvgGridView(model:@grid_setting, el:$("#svg-canvas-grid"), width:800, height:600)
     @grid_view.render()
@@ -90,6 +94,9 @@ $(document).ready(() =>
     @grid_setting_view.render()
 
     @open_file_view = new OpenFileView(el:$("#fileModal"))
+    @open_image_file_view = new OpenImageFileView(el:$("#imageFileModal"))
+
+    @contextMenu = new ContextMenuView(el:$("#svg-canvas-base"))
 
     @snap_line_view =  new SnapLineView(el:$("#snap-line-view"))
     @snap_item_view =  new SnapItemView(el:$("#snap-item-view"))
@@ -180,25 +187,6 @@ $(document).ready(() =>
 
     $(".navbar-fixed-top").hide();
     $(".container-fluid").css("padding-top", "0px");
-
-    $.contextMenu({
-        selector: "#svg-canvas-base",
-        items: {
-            flipX:     {  name: "flipX",     callback: ((key, opt) =>  cloneControlView.getControlItem().flipX()) },
-            flipY:     {  name: "flipY",     callback: ((key, opt) =>  cloneControlView.getControlItem().flipY()) },
-            forward:   {  name: "forward",   callback: ((key, opt) =>  orderControl.bringForward()) },
-            back:      {  name: "back",      callback: ((key, opt) =>  orderControl.bringBack()) },
-            top:       {  name: "top",       callback: ((key, opt) =>  orderControl.toTop()) },
-            bottom:    {  name: "bottom",    callback: ((key, opt) =>  orderControl.toBottom()) },
-            group:     {  name: "group",     callback: ((key, opt) =>  SvgCanvasBase.groupSelectedItem())},
-            un_group:  {  name: "ungroup",   callback: ((key, opt) =>  SvgCanvasBase.unGroupSelectedItem())},
-            unite:     {  name: "unite",     callback: ((key, opt) =>  excutePathBoolean("unite"))},
-            intersect: {  name: "intersect", callback: ((key, opt) =>  excutePathBoolean("intersect"))},
-            subtract:  {  name: "subtract",  callback: ((key, opt) =>  excutePathBoolean("subtract"))},
-            divide:    {  name: "divide",    callback: ((key, opt) =>  excutePathBoolean("divide"))},
-            exclude:   {  name: "exclude",   callback: ((key, opt) =>  excutePathBoolean("exclude"))}
-        }
-    });
 
     initPropertyEdit()
     @cloneControlView.hide()

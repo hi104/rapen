@@ -4,7 +4,6 @@
     <title>rapen</title>
     <link href="stylesheets/bootstrap.css" media="all" rel="stylesheet" type="text/css" />
     <link href="stylesheets/spectrum.css" media="all" rel="stylesheet" type="text/css" />
-    <link href="stylesheets/jquery.contextMenu.css" media="all" rel="stylesheet" type="text/css" />
     <link href="stylesheets/application.css" media="all" rel="stylesheet" type="text/css" />
     <link rel="stylesheet" href="http://code.jquery.com/ui/1.10.0/themes/base/jquery-ui.css" />
 
@@ -15,7 +14,6 @@
     <script src="javascripts/lib/underscore.js"></script>
     <script src="javascripts/lib/backbone.js"></script>
     <script src="javascripts/lib/bootstrap.js"></script>
-    <script src="javascripts/lib/jquery.contextMenu.js"></script>
     <script src="javascripts/lib/jquery.knob.js"></script>
     <script src="javascripts/lib/keymaster.min.js"></script>
     <script src="javascripts/lib/paper.js"></script>
@@ -27,6 +25,26 @@
 
   </head>
   <body>
+    <div id="contextMenu" class="dropdown clearfix" style="z-index:1000">
+      <ul class="dropdown-menu" role="menu" aria-labelledby="dropdownMenu" style="display:block;position:static;margin-bottom:5px;">
+        <li><a tabindex="-1" href="#" data-action="flipX">flipX</a></li>
+        <li><a tabindex="-1" href="#" data-action="flipY">flipY</a></li>
+        <li class="divider"></li>
+        <li><a tabindex="-1" href="#" data-action="forward">forward</a></li>
+        <li><a tabindex="-1" href="#" data-action="back">back</a></li>
+        <li><a tabindex="-1" href="#" data-action="top">top</a></li>
+        <li><a tabindex="-1" href="#" data-action="bottom">bottom</a></li>
+        <li class="divider"></li>
+        <li><a tabindex="-1" href="#" data-action="group">group</a></li>
+        <li><a tabindex="-1" href="#" data-action="ungroup">ungroup</a></li>
+        <li class="divider"></li>
+        <li><a tabindex="-1" href="#" data-action="unite">unite</a></li>
+        <li><a tabindex="-1" href="#" data-action="intersect">intersect</a></li>
+        <li><a tabindex="-1" href="#" data-action="subtract">subtract</a></li>
+        <li><a tabindex="-1" href="#" data-action="divide">divide</a></li>
+        <li><a tabindex="-1" href="#" data-action="exclude">exclude</a></li>
+      </ul>
+    </div>
     <div class="" style="height:100%;width:100%;">
       <div class="btn-toolbar" style="padding:5px;border-bottom:1px solid #ccc;">
         <div class="btn-group">
@@ -42,15 +60,15 @@
                   <span class="glyphicon glyphicon-open"></span>
                   Open (.svg)</a>
               </li>
+              <li><a id="open-image-file-button" href="#">
+                  <span class="glyphicon glyphicon-open"></span>
+                  Open Image</a>
+              </li>
               <li><a id="export-button" href="#">
                   <span class="glyphicon glyphicon-export"></span>
                   Export
                 </a>
               </li>
-              <!-- <li><a id="save-button" href="#"> -->
-              <!--     <span class="glyphicon glyphicon-save"></span> -->
-              <!--     Save</a> -->
-              <!-- </li> -->
             </ul>
           </div>
 
@@ -255,7 +273,7 @@
     </div><!-- /.modal -->
 
     <!-- File Modal -->
-    <div class="modal" id="fileModal" tabindex="-1" role="dialog" aria-labelledby="settingModalLabel" aria-hidden="true">
+    <div class="modal" id="fileModal" tabindex="-1" role="dialog" aria-hidden="true">
       <div class="modal-dialog">
         <div class="modal-content">
           <div class="modal-header">
@@ -275,13 +293,34 @@
               </div>
             </form>
           </div>
-          <div class="modal-footer">
-            <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
-          </div>
         </div><!-- /.modal-content -->
       </div><!-- /.modal-dialog -->
     </div><!-- /.modal -->
 
+    <!-- ImageFile Modal -->
+    <div class="modal" id="imageFileModal" tabindex="-1" role="dialog" aria-hidden="true">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+            <h4 class="modal-title" id="imageFileModalLabel">Open ImageFile</h4>
+          </div>
+          <div class="modal-body">
+            <form class="form-horizontal" id="ImageFile-form" role="form" onsubmit="return false;">
+              <div class="form-group">
+                <div class="col-sm-offset-1 col-sm-10">
+                  <div class="checkbox">
+                    <label>
+                      <input id="image-file-select" type="file">
+                    </label>
+                  </div>
+                </div>
+              </div>
+            </form>
+          </div>
+        </div><!-- /.modal-content -->
+      </div><!-- /.modal-dialog -->
+    </div><!-- /.modal -->
 
   </body>
 </html>
