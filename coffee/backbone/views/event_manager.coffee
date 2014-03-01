@@ -7,7 +7,8 @@ class @EventManager
             "control" : new ElementControlMode(@),
             "text" : new TextEditMode(@),
             "path" : new PathEditMode(@),
-            "grad" : new GradientEditMode(@)
+            "grad" : new GradientEditMode(@),
+            "draw-path" : new DrawPathMode(@)
         }
 
         for name, mode of @modes

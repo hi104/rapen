@@ -27,6 +27,7 @@ module.exports = function(grunt) {
                       "coffee/backbone/views/mode/element_control_mode.coffee",
                       "coffee/backbone/views/mode/text_edit_mode.coffee",
                       "coffee/backbone/views/mode/path_edit_mode.coffee",
+                      "coffee/backbone/views/mode/draw_path_mode.coffee", 
                       "coffee/backbone/views/mode/gradient_edit_mode.coffee",
                       "coffee/backbone/views/mode/mode_view.coffee",
                       "coffee/backbone/views/event_manager.coffee",

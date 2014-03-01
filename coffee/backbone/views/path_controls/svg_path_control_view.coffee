@@ -32,12 +32,15 @@ class @SvgPathControlView extends Backbone.View
                 controls.push(control_view)
                 @_segments.push(control_view.segment)
 
-            last_control = _(controls).last()
-            for control in _.compact([last_control])
-                do(control) =>
-                    controls[0].segment.on("change", () =>
-                        control.curveControl.render()
-                    )
+            last = null
+            if child.isClosed()
+                last = _(controls).last()
+
+            _.reduce(controls, ((pre, control) ->
+                    pre.setNextSegment(control) if pre
+                    control.setPreSegment(pre)
+                    control
+            ), last)
 
         @_setupControlView()
 
@@ -71,11 +74,11 @@ class @SvgPathControlView extends Backbone.View
         segment_model.init(seg)
         curve = seg.getCurve()
         curve_control = null
-        pre_curve_control = @_pre_curve_control
-        if curve
+
+        if curve and @_pre_curve_control != curve
+            @_pre_curve_control = curve
             el = SVGUtil.createTag("path")
             curve_control = new SvgCurveView(pathControl:@, el:el, item:@item, curve:curve)
-            @_pre_curve_control = curve_control
             @_control_views.push(curve_control)
 
         el = @createRect(0, 0)
@@ -84,6 +87,10 @@ class @SvgPathControlView extends Backbone.View
             curveControl:curve_control,
             segment:segment_model, getPoint:(() => segment_model.getPoint() )
         })
+
+        if curve_control
+            curve_control.setSegment(control)
+
         @_control_views.push(control)
 
         el = @createPoint(0, 0)
@@ -99,9 +106,15 @@ class @SvgPathControlView extends Backbone.View
             handleIncontrol.render()
             handleOutcontrol.render()
             control.render()
-            curve_control.render() if curve_control
-            pre_curve_control.render() if pre_curve_control
+            control.curveControl.render() if control.curveControl
+            if control.preSegment
+                control.preSegment.curveControl.render() if control.preSegment.curveControl
+            if control.nextSegment
+                control.nextSegment.curveControl.render() if control.nextSegment.curveControl
         )
+
+        control.setHandleOut(handleOutcontrol)
+        control.setHandleIn(handleIncontrol)
         control
 
     #for set point before move position

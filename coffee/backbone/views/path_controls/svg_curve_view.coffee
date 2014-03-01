@@ -14,6 +14,9 @@ class @SvgCurveView extends Backbone.View
         "mouseover"  : "onMouseOver"
         "mouseleave" : "onMouseLeave"
 
+    setSegment:(segment) ->
+        @segment = segment
+
     setStyle:() =>
         $(@el).attr({
             "fill"         : "none",
@@ -45,6 +48,53 @@ class @SvgCurveView extends Backbone.View
 
     onMouseDown:(e)=>
         @_cancelEvent(e)
+        $(document).mousemove(@onMouseMove)
+        $(document).mouseup(@onMouseDrop)
+
+    pointAdd:(p, p2) ->
+        {  x: p.x + p2.x, y: p.y + p2.y }
+
+    pointSub:(p, p2) ->
+        {  x: p.x - p2.x, y: p.y - p2.y }
+
+    pointMultiply:(p, val) ->
+        {  x: p.x * val, y: p.y * val }
+
+
+    onMouseMove:(e) =>
+        seg = @segment
+        next = @segment.nextSegment
+
+        seg_p = seg.getPoint()
+        seg_p =  { x:seg_p.getX() ,y:seg_p.getY()}
+        next_p = next.getPoint()
+        next_p = { x:next_p.getX() ,y:next_p.getY()}
+
+        center_x = (seg_p.x + next_p.x) /2
+        center_y = (seg_p.y + next_p.y) /2
+        center = {x:center_x, y: center_y}
+
+        matrix = @item.getScreenCTM()
+        point = SVGUtil.createPoint(e.pageX, e.pageY)
+        point = point.matrixTransform(matrix.inverse())
+
+        point_vec = @pointSub(point, center)
+        point_vec2 = @pointMultiply(point_vec, 2)
+
+        point_vec2 = @pointAdd(point_vec2, center)
+
+        seg_vec  = @pointSub(point_vec2, seg_p)
+        next_vec  = @pointSub(point_vec2, next_p)
+
+        div = 2/3
+        seg_vec = @pointMultiply(seg_vec, div)
+        next_vec = @pointMultiply(next_vec, div)
+        seg.handleOut.getPoint().setPoint(seg_vec.x, seg_vec.y)
+        next.handleIn.getPoint().setPoint(next_vec.x, next_vec.y)
+
+    onMouseDrop:(e) =>
+        $(document).unbind('mousemove', @onMouseMove)
+        $(document).unbind('mouseup', @onMouseDrop)
 
     onMouseOver:(e)=>
         $(@el).attr({

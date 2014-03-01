@@ -17,6 +17,18 @@ class @SvgSegmentPointControl extends Backbone.View
         @curveControl = @options.curveControl
         @setStyle()
 
+    setHandleOut:(handle) ->
+        @handleOut = handle
+
+    setHandleIn:(handle) ->
+        @handleIn = handle
+
+    setNextSegment:(segment) ->
+        @nextSegment = segment
+
+    setPreSegment:(segment) ->
+        @preSegment = segment
+
     createHandleLine:(wrap) =>
         @handleInLine = @_createLine(wrap)
         @handleOutLine = @_createLine(wrap)
@@ -29,7 +41,7 @@ class @SvgSegmentPointControl extends Backbone.View
             "stroke"       : "blue"
         });
 
-    onMouseOver:(e)=>
+    onMouseOver:(e)->
         $(@el).attr({
            "stroke-width" : "3",
         })
@@ -44,11 +56,14 @@ class @SvgSegmentPointControl extends Backbone.View
             "stroke" : "black",
             "stroke-width" : "1",
             "fill" : "white",
-            "width" : "12",
-            "height" : "12"
+            "width" : "10",
+            "height" : "10"
         })
 
     onClick:(e) =>
+        @_onClick(e)
+
+    _onClick:(e) ->
 
         if(e.shiftKey)
             @setSelected(not @segment.isSelected())

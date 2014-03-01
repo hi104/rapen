@@ -2558,6 +2558,124 @@
 (function() {
   var __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
 
+  this.DrawPathMode = (function() {
+    function DrawPathMode(maneger) {
+      this.disable = __bind(this.disable, this);
+      this.onStop = __bind(this.onStop, this);
+      this.onStart = __bind(this.onStart, this);
+      this.getMousePositionOfItem = __bind(this.getMousePositionOfItem, this);
+      this.begin = __bind(this.begin, this);
+      this.setPathCloseAction = __bind(this.setPathCloseAction, this);
+      this.onMouseUp = __bind(this.onMouseUp, this);
+      this.onMouseMove = __bind(this.onMouseMove, this);
+      this.attachOnMouseMove = __bind(this.attachOnMouseMove, this);
+      this.onEvent = __bind(this.onEvent, this);
+      _.extend(this, Backbone.Events);
+      this.maneger = maneger;
+      this.path_control = new SvgPathControlView({
+        el: $("#draw-path-control-panel")
+      });
+    }
+
+    DrawPathMode.prototype.onEvent = function(event, sender, e, options) {
+      var pos;
+      if (!(sender instanceof SvgCanvas)) {
+        return;
+      }
+      pos = {
+        x: e.pageX,
+        y: e.pageY
+      };
+      if (event === "onMouseDown") {
+        if (!this.path_control.item) {
+          this.begin(pos);
+          this.attachOnMouseMove();
+          return this.last_segment_control.handleOut.pre_position = e;
+        } else {
+          this.cancelEvent(e);
+          pos = this.getMousePositionOfItem(pos, this.path_control.item);
+          this.path_control.path._children[0].add(pos);
+          this.path_control.refresh();
+          this.setPathCloseAction();
+          this.attachOnMouseMove();
+          return this.last_segment_control.handleOut.pre_position = e;
+        }
+      }
+    };
+
+    DrawPathMode.prototype.attachOnMouseMove = function() {
+      $(document).mousemove(this.onMouseMove);
+      return $(document).mouseup(this.onMouseUp);
+    };
+
+    DrawPathMode.prototype.onMouseMove = function(e) {
+      return this.last_segment_control.handleOut.onMouseMove(e);
+    };
+
+    DrawPathMode.prototype.onMouseUp = function(e) {
+      $(document).unbind('mousemove', this.onMouseMove);
+      return $(document).unbind('mouseup', this.onMouseUp);
+    };
+
+    DrawPathMode.prototype.setPathCloseAction = function() {
+      var first_segment_control, origin, path_control, segment_controls, self;
+      segment_controls = this.path_control.getSegmentControls();
+      first_segment_control = _(segment_controls).first();
+      this.last_segment_control = _(segment_controls).last();
+      origin = first_segment_control._onClick;
+      path_control = this.path_control;
+      self = this;
+      return first_segment_control._onClick = function(e) {
+        path_control.path._children[0].closePath();
+        path_control.refresh();
+        return self.disable();
+      };
+    };
+
+    DrawPathMode.prototype.begin = function(pos) {
+      var added_item;
+      added_item = SvgCanvasBase.addElement(SVGUtil.createTag("path"));
+      pos = this.getMousePositionOfItem(pos, added_item);
+      added_item.attr({
+        "d": "M " + pos.x + ", " + pos.y,
+        "stroke": "black",
+        "stroke-width": "2",
+        "fill-opacity": "0"
+      });
+      return this.path_control.setItem(added_item);
+    };
+
+    DrawPathMode.prototype.getMousePositionOfItem = function(pos, item) {
+      var matrix;
+      pos = SVGUtil.createPoint(pos.x, pos.y);
+      matrix = item.getScreenCTM();
+      return pos.matrixTransform(matrix.inverse());
+    };
+
+    DrawPathMode.prototype.onStart = function() {};
+
+    DrawPathMode.prototype.onStop = function() {
+      return this.disable();
+    };
+
+    DrawPathMode.prototype.disable = function() {
+      return this.path_control.clear();
+    };
+
+    DrawPathMode.prototype.cancelEvent = function(e) {
+      e.preventDefault();
+      return e.stopPropagation();
+    };
+
+    return DrawPathMode;
+
+  })();
+
+}).call(this);
+
+(function() {
+  var __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
+
   this.GradientEditMode = (function() {
     function GradientEditMode(maneger) {
       this.onStop = __bind(this.onStop, this);
@@ -2678,7 +2796,8 @@
         "control": new ElementControlMode(this),
         "text": new TextEditMode(this),
         "path": new PathEditMode(this),
-        "grad": new GradientEditMode(this)
+        "grad": new GradientEditMode(this),
+        "draw-path": new DrawPathMode(this)
       };
       _ref = this.modes;
       for (name in _ref) {
@@ -2904,6 +3023,8 @@
       this.toPathData = __bind(this.toPathData, this);
       this.onMouseLeave = __bind(this.onMouseLeave, this);
       this.onMouseOver = __bind(this.onMouseOver, this);
+      this.onMouseDrop = __bind(this.onMouseDrop, this);
+      this.onMouseMove = __bind(this.onMouseMove, this);
       this.onMouseDown = __bind(this.onMouseDown, this);
       this._cancelEvent = __bind(this._cancelEvent, this);
       this.onClick = __bind(this.onClick, this);
@@ -2930,6 +3051,10 @@
         "mouseover": "onMouseOver",
         "mouseleave": "onMouseLeave"
       };
+    };
+
+    SvgCurveView.prototype.setSegment = function(segment) {
+      return this.segment = segment;
     };
 
     SvgCurveView.prototype.setStyle = function() {
@@ -2969,7 +3094,70 @@
     };
 
     SvgCurveView.prototype.onMouseDown = function(e) {
-      return this._cancelEvent(e);
+      this._cancelEvent(e);
+      $(document).mousemove(this.onMouseMove);
+      return $(document).mouseup(this.onMouseDrop);
+    };
+
+    SvgCurveView.prototype.pointAdd = function(p, p2) {
+      return {
+        x: p.x + p2.x,
+        y: p.y + p2.y
+      };
+    };
+
+    SvgCurveView.prototype.pointSub = function(p, p2) {
+      return {
+        x: p.x - p2.x,
+        y: p.y - p2.y
+      };
+    };
+
+    SvgCurveView.prototype.pointMultiply = function(p, val) {
+      return {
+        x: p.x * val,
+        y: p.y * val
+      };
+    };
+
+    SvgCurveView.prototype.onMouseMove = function(e) {
+      var center, center_x, center_y, div, matrix, next, next_p, next_vec, point, point_vec, point_vec2, seg, seg_p, seg_vec;
+      seg = this.segment;
+      next = this.segment.nextSegment;
+      seg_p = seg.getPoint();
+      seg_p = {
+        x: seg_p.getX(),
+        y: seg_p.getY()
+      };
+      next_p = next.getPoint();
+      next_p = {
+        x: next_p.getX(),
+        y: next_p.getY()
+      };
+      center_x = (seg_p.x + next_p.x) / 2;
+      center_y = (seg_p.y + next_p.y) / 2;
+      center = {
+        x: center_x,
+        y: center_y
+      };
+      matrix = this.item.getScreenCTM();
+      point = SVGUtil.createPoint(e.pageX, e.pageY);
+      point = point.matrixTransform(matrix.inverse());
+      point_vec = this.pointSub(point, center);
+      point_vec2 = this.pointMultiply(point_vec, 2);
+      point_vec2 = this.pointAdd(point_vec2, center);
+      seg_vec = this.pointSub(point_vec2, seg_p);
+      next_vec = this.pointSub(point_vec2, next_p);
+      div = 2 / 3;
+      seg_vec = this.pointMultiply(seg_vec, div);
+      next_vec = this.pointMultiply(next_vec, div);
+      seg.handleOut.getPoint().setPoint(seg_vec.x, seg_vec.y);
+      return next.handleIn.getPoint().setPoint(next_vec.x, next_vec.y);
+    };
+
+    SvgCurveView.prototype.onMouseDrop = function(e) {
+      $(document).unbind('mousemove', this.onMouseMove);
+      return $(document).unbind('mouseup', this.onMouseDrop);
     };
 
     SvgCurveView.prototype.onMouseOver = function(e) {
@@ -3103,8 +3291,7 @@
     };
 
     SvgPathControlView.prototype.createViews = function() {
-      var child, control, control_view, controls, last_control, seg, _fn, _i, _j, _k, _len, _len1, _len2, _ref1, _ref2, _ref3,
-        _this = this;
+      var child, control_view, controls, last, seg, _i, _j, _len, _len1, _ref1, _ref2;
       this.clearView();
       _ref1 = this.path._children;
       for (_i = 0, _len = _ref1.length; _i < _len; _i++) {
@@ -3118,17 +3305,17 @@
           controls.push(control_view);
           this._segments.push(control_view.segment);
         }
-        last_control = _(controls).last();
-        _ref3 = _.compact([last_control]);
-        _fn = function(control) {
-          return controls[0].segment.on("change", function() {
-            return control.curveControl.render();
-          });
-        };
-        for (_k = 0, _len2 = _ref3.length; _k < _len2; _k++) {
-          control = _ref3[_k];
-          _fn(control);
+        last = null;
+        if (child.isClosed()) {
+          last = _(controls).last();
         }
+        _.reduce(controls, (function(pre, control) {
+          if (pre) {
+            pre.setNextSegment(control);
+          }
+          control.setPreSegment(pre);
+          return control;
+        }), last);
       }
       return this._setupControlView();
     };
@@ -3164,14 +3351,14 @@
     };
 
     SvgPathControlView.prototype.createView = function(seg) {
-      var control, curve, curve_control, el, handleIncontrol, handleOutcontrol, pre_curve_control, segment_model,
+      var control, curve, curve_control, el, handleIncontrol, handleOutcontrol, segment_model,
         _this = this;
       segment_model = new PathSegmentAdapeter();
       segment_model.init(seg);
       curve = seg.getCurve();
       curve_control = null;
-      pre_curve_control = this._pre_curve_control;
-      if (curve) {
+      if (curve && this._pre_curve_control !== curve) {
+        this._pre_curve_control = curve;
         el = SVGUtil.createTag("path");
         curve_control = new SvgCurveView({
           pathControl: this,
@@ -3179,7 +3366,6 @@
           item: this.item,
           curve: curve
         });
-        this._pre_curve_control = curve_control;
         this._control_views.push(curve_control);
       }
       el = this.createRect(0, 0);
@@ -3193,6 +3379,9 @@
           return segment_model.getPoint();
         })
       });
+      if (curve_control) {
+        curve_control.setSegment(control);
+      }
       this._control_views.push(control);
       el = this.createPoint(0, 0);
       handleOutcontrol = new SvgSegmentHandleControl({
@@ -3221,13 +3410,22 @@
         handleIncontrol.render();
         handleOutcontrol.render();
         control.render();
-        if (curve_control) {
-          curve_control.render();
+        if (control.curveControl) {
+          control.curveControl.render();
         }
-        if (pre_curve_control) {
-          return pre_curve_control.render();
+        if (control.preSegment) {
+          if (control.preSegment.curveControl) {
+            control.preSegment.curveControl.render();
+          }
+        }
+        if (control.nextSegment) {
+          if (control.nextSegment.curveControl) {
+            return control.nextSegment.curveControl.render();
+          }
         }
       });
+      control.setHandleOut(handleOutcontrol);
+      control.setHandleIn(handleIncontrol);
       return control;
     };
 
@@ -3372,7 +3570,6 @@
       this.onClick = __bind(this.onClick, this);
       this.setStyle = __bind(this.setStyle, this);
       this.onMouseLeave = __bind(this.onMouseLeave, this);
-      this.onMouseOver = __bind(this.onMouseOver, this);
       this._createLine = __bind(this._createLine, this);
       this.createHandleLine = __bind(this.createHandleLine, this);
       this._init = __bind(this._init, this);
@@ -3401,6 +3598,22 @@
       this.pathControl = this.options.pathControl;
       this.curveControl = this.options.curveControl;
       return this.setStyle();
+    };
+
+    SvgSegmentPointControl.prototype.setHandleOut = function(handle) {
+      return this.handleOut = handle;
+    };
+
+    SvgSegmentPointControl.prototype.setHandleIn = function(handle) {
+      return this.handleIn = handle;
+    };
+
+    SvgSegmentPointControl.prototype.setNextSegment = function(segment) {
+      return this.nextSegment = segment;
+    };
+
+    SvgSegmentPointControl.prototype.setPreSegment = function(segment) {
+      return this.preSegment = segment;
     };
 
     SvgSegmentPointControl.prototype.createHandleLine = function(wrap) {
@@ -3435,12 +3648,16 @@
         "stroke": "black",
         "stroke-width": "1",
         "fill": "white",
-        "width": "12",
-        "height": "12"
+        "width": "10",
+        "height": "10"
       });
     };
 
     SvgSegmentPointControl.prototype.onClick = function(e) {
+      return this._onClick(e);
+    };
+
+    SvgSegmentPointControl.prototype._onClick = function(e) {
       if (e.shiftKey) {
         this.setSelected(!this.segment.isSelected());
       }
@@ -3628,15 +3845,26 @@
       pos = this._itemMatrixPos(pos);
       x = point.getX() + pos.x;
       y = point.getY() + pos.y;
+      this.setHandlePoint({
+        x: x,
+        y: y
+      }, e.shiftKey);
+      return this.pre_position = e;
+    };
+
+    SvgSegmentHandleControl.prototype.setHandlePoint = function(pos, sync) {
+      var point, x, y;
+      x = pos.x;
+      y = pos.y;
+      point = this.getPoint();
       point.setPoint(x, y);
-      if (e.shiftKey) {
+      if (sync) {
         if (point === this.segment.getHandleIn()) {
-          this.segment.getHandleOut().setPoint(-x, -y);
+          return this.segment.getHandleOut().setPoint(-x, -y);
         } else if (point === this.segment.getHandleOut()) {
-          this.segment.getHandleIn().setPoint(-x, -y);
+          return this.segment.getHandleIn().setPoint(-x, -y);
         }
       }
-      return this.pre_position = e;
     };
 
     SvgSegmentHandleControl.prototype.setStyle = function() {
@@ -3644,7 +3872,7 @@
         "stroke": "blue",
         "stroke-width": "1",
         "fill": "white",
-        "r": "6"
+        "r": "5"
       });
     };
 
@@ -3656,8 +3884,8 @@
       seg_point = SVGUtil.createPoint(seg_x + point.getX(), seg_y + point.getY());
       seg_point = seg_point.matrixTransform(this.item.getCTM());
       return this.$el.attr({
-        "cx": seg_point.x,
-        "cy": seg_point.y
+        "cx": seg_point.x - 1,
+        "cy": seg_point.y - 1
       });
     };
 
@@ -7042,12 +7270,13 @@
       if (_(["exclude", "divide"]).contains(operate)) {
         path._children.forEach(function(item) {
           var path_el;
-          path_el = SVGUtil.createTag("path");
+          path_el = item1.el.cloneNode(true);
           console.log(item);
           $(path_el).attr({
             "d": item.getPathData(),
             "fill-rule": "evenodd",
-            "transform": ""
+            "transform": "",
+            "id": ""
           });
           return SvgCanvasBase.addElement(path_el);
         });

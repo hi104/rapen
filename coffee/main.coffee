@@ -216,12 +216,13 @@ $(document).ready(() =>
         if _(["exclude", "divide"]).contains(operate)
             # path type is paper.Group
             path._children.forEach((item) =>
-                path_el =  SVGUtil.createTag("path")
+                path_el = item1.el.cloneNode(true)
                 console.log(item)
                 $(path_el).attr({
                     "d": item.getPathData(),
                     "fill-rule": "evenodd",
-                    "transform": ""
+                    "transform": "",
+                    "id": ""
                 })
 
                 SvgCanvasBase.addElement(path_el)

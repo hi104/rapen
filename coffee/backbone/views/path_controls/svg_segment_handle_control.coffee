@@ -12,21 +12,27 @@ class @SvgSegmentHandleControl extends SvgSegmentPointControl
         pos = @_itemMatrixPos(pos)
         x = point.getX() + pos.x
         y = point.getY() + pos.y
-        point.setPoint(x, y)
+        @setHandlePoint({x: x, y: y}, e.shiftKey)
 
-        if(e.shiftKey)
+        @pre_position = e
+
+    setHandlePoint:(pos, sync) ->
+        x = pos.x
+        y = pos.y
+        point = @getPoint()
+        point.setPoint(x, y)
+        if(sync)
             if(point == @segment.getHandleIn())
                 @segment.getHandleOut().setPoint(-x, -y)
             else if (point == @segment.getHandleOut())
                 @segment.getHandleIn().setPoint(-x, -y)
-        @pre_position = e
 
     setStyle:() =>
         $(@el).attr({
             "stroke"       : "blue",
             "stroke-width" : "1",
             "fill"         : "white",
-            "r"            : "6"
+            "r"            : "5"
         })
 
     render:() =>
@@ -38,6 +44,6 @@ class @SvgSegmentHandleControl extends SvgSegmentPointControl
             seg_y + point.getY())
         seg_point = seg_point.matrixTransform(@item.getCTM())
         @$el.attr({
-            "cx": seg_point.x,
-            "cy": seg_point.y
+            "cx": seg_point.x - 1,
+            "cy": seg_point.y - 1
         })
