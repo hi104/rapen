@@ -51,16 +51,6 @@ class @SvgCurveView extends Backbone.View
         $(document).mousemove(@onMouseMove)
         $(document).mouseup(@onMouseDrop)
 
-    pointAdd:(p, p2) ->
-        {  x: p.x + p2.x, y: p.y + p2.y }
-
-    pointSub:(p, p2) ->
-        {  x: p.x - p2.x, y: p.y - p2.y }
-
-    pointMultiply:(p, val) ->
-        {  x: p.x * val, y: p.y * val }
-
-
     onMouseMove:(e) =>
         seg = @segment
         next = @segment.nextSegment
@@ -78,19 +68,39 @@ class @SvgCurveView extends Backbone.View
         point = SVGUtil.createPoint(e.pageX, e.pageY)
         point = point.matrixTransform(matrix.inverse())
 
-        point_vec = @pointSub(point, center)
-        point_vec2 = @pointMultiply(point_vec, 2)
+        if (e.shiftKey)
+            point_vec  = VectorUtil.sub(point, seg_p)
+            point2_vec = VectorUtil.sub(next_p, seg_p)
 
-        point_vec2 = @pointAdd(point_vec2, center)
+            c = VectorUtil.dot(point_vec, point2_vec)
+            n = point2_vec
 
-        seg_vec  = @pointSub(point_vec2, seg_p)
-        next_vec  = @pointSub(point_vec2, next_p)
+            n_dist = VectorUtil.dist(n)
+            n_dist = n_dist * n_dist
 
-        div = 2/3
-        seg_vec = @pointMultiply(seg_vec, div)
-        next_vec = @pointMultiply(next_vec, div)
-        seg.handleOut.getPoint().setPoint(seg_vec.x, seg_vec.y)
-        next.handleIn.getPoint().setPoint(next_vec.x, next_vec.y)
+            v = VectorUtil.multiply(VectorUtil.multiply(n, c), 1/n_dist)
+
+            v = VectorUtil.sub(point_vec, v)
+            v = VectorUtil.multiply(v, 4/3)
+
+            seg.handleOut.getPoint().setPoint(v.x, v.y)
+            next.handleIn.getPoint().setPoint(v.x, v.y)
+
+        else
+            point_vec = VectorUtil.sub(point, center)
+            point_vec2 = VectorUtil.multiply(point_vec, 2)
+
+            point_vec2 = VectorUtil.add(point_vec2, center)
+
+            seg_vec  = VectorUtil.sub(point_vec2, seg_p)
+            next_vec  = VectorUtil.sub(point_vec2, next_p)
+
+            div = 2/3
+            seg_vec = VectorUtil.multiply(seg_vec, div)
+            next_vec = VectorUtil.multiply(next_vec, div)
+            seg.handleOut.getPoint().setPoint(seg_vec.x, seg_vec.y)
+            next.handleIn.getPoint().setPoint(next_vec.x, next_vec.y)
+
 
     onMouseDrop:(e) =>
         $(document).unbind('mousemove', @onMouseMove)
