@@ -3099,29 +3099,8 @@
       return $(document).mouseup(this.onMouseDrop);
     };
 
-    SvgCurveView.prototype.pointAdd = function(p, p2) {
-      return {
-        x: p.x + p2.x,
-        y: p.y + p2.y
-      };
-    };
-
-    SvgCurveView.prototype.pointSub = function(p, p2) {
-      return {
-        x: p.x - p2.x,
-        y: p.y - p2.y
-      };
-    };
-
-    SvgCurveView.prototype.pointMultiply = function(p, val) {
-      return {
-        x: p.x * val,
-        y: p.y * val
-      };
-    };
-
     SvgCurveView.prototype.onMouseMove = function(e) {
-      var center, center_x, center_y, div, matrix, next, next_p, next_vec, point, point_vec, point_vec2, seg, seg_p, seg_vec;
+      var c, center, center_x, center_y, div, matrix, n, n_dist, next, next_p, next_vec, point, point2_vec, point_vec, point_vec2, seg, seg_p, seg_vec, v;
       seg = this.segment;
       next = this.segment.nextSegment;
       seg_p = seg.getPoint();
@@ -3143,16 +3122,30 @@
       matrix = this.item.getScreenCTM();
       point = SVGUtil.createPoint(e.pageX, e.pageY);
       point = point.matrixTransform(matrix.inverse());
-      point_vec = this.pointSub(point, center);
-      point_vec2 = this.pointMultiply(point_vec, 2);
-      point_vec2 = this.pointAdd(point_vec2, center);
-      seg_vec = this.pointSub(point_vec2, seg_p);
-      next_vec = this.pointSub(point_vec2, next_p);
-      div = 2 / 3;
-      seg_vec = this.pointMultiply(seg_vec, div);
-      next_vec = this.pointMultiply(next_vec, div);
-      seg.handleOut.getPoint().setPoint(seg_vec.x, seg_vec.y);
-      return next.handleIn.getPoint().setPoint(next_vec.x, next_vec.y);
+      if (e.shiftKey) {
+        point_vec = VectorUtil.sub(point, seg_p);
+        point2_vec = VectorUtil.sub(next_p, seg_p);
+        c = VectorUtil.dot(point_vec, point2_vec);
+        n = point2_vec;
+        n_dist = VectorUtil.dist(n);
+        n_dist = n_dist * n_dist;
+        v = VectorUtil.multiply(VectorUtil.multiply(n, c), 1 / n_dist);
+        v = VectorUtil.sub(point_vec, v);
+        v = VectorUtil.multiply(v, 4 / 3);
+        seg.handleOut.getPoint().setPoint(v.x, v.y);
+        return next.handleIn.getPoint().setPoint(v.x, v.y);
+      } else {
+        point_vec = VectorUtil.sub(point, center);
+        point_vec2 = VectorUtil.multiply(point_vec, 2);
+        point_vec2 = VectorUtil.add(point_vec2, center);
+        seg_vec = VectorUtil.sub(point_vec2, seg_p);
+        next_vec = VectorUtil.sub(point_vec2, next_p);
+        div = 2 / 3;
+        seg_vec = VectorUtil.multiply(seg_vec, div);
+        next_vec = VectorUtil.multiply(next_vec, div);
+        seg.handleOut.getPoint().setPoint(seg_vec.x, seg_vec.y);
+        return next.handleIn.getPoint().setPoint(next_vec.x, next_vec.y);
+      }
     };
 
     SvgCurveView.prototype.onMouseDrop = function(e) {
@@ -6973,6 +6966,37 @@
 
     VectorUtil.dot = function(v1, v2) {
       return (v1.x * v2.x) + (v1.y * v2.y);
+    };
+
+    VectorUtil.add = function(v1, v2) {
+      return {
+        x: v1.x + v2.x,
+        y: v1.y + v2.y
+      };
+    };
+
+    VectorUtil.sub = function(v1, v2) {
+      return {
+        x: v1.x - v2.x,
+        y: v1.y - v2.y
+      };
+    };
+
+    VectorUtil.multiply = function(v1, val) {
+      return {
+        x: v1.x * val,
+        y: v1.y * val
+      };
+    };
+
+    VectorUtil.dist = function(v1, v2) {
+      var v;
+      if (v2) {
+        v = VectorUtil.sub(v1, v2);
+      } else {
+        v = v1;
+      }
+      return Math.sqrt((v.x * v.x) + (v.y * v.y));
     };
 
     return VectorUtil;

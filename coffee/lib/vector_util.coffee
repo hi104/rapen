@@ -6,6 +6,23 @@ class @VectorUtil
     @dot:(v1, v2) ->
         (v1.x * v2.x) + (v1.y * v2.y)
 
+    @add:(v1, v2) ->
+        {  x: v1.x + v2.x, y: v1.y + v2.y }
+
+    @sub:(v1, v2) ->
+        {  x: v1.x - v2.x, y: v1.y - v2.y }
+
+    @multiply:(v1, val) ->
+        {  x: v1.x * val,  y: v1.y * val }
+
+    @dist:(v1, v2) ->
+        if v2
+            v = VectorUtil.sub(v1, v2)
+        else
+            v = v1
+        Math.sqrt((v.x * v.x) + (v.y * v.y))
+
+
     # @rotMatrix:(r) =>
     #     c = Math.cos(r)
     #     s = Math.sin(r)
