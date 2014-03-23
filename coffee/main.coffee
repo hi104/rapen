@@ -27,6 +27,9 @@ $(document).ready(() =>
         control: @cloneControlView,
         item_list: SvgCanvasBase.item_list
     })
+
+    @inspectorDragAndDrop = new InspectorDragAndDrop()
+
     $("#inspector-list").append(@inspectorListView.el)
 
     @SvgCanvasBase.bind("onZoom", (e) =>
@@ -188,8 +191,15 @@ $(document).ready(() =>
     $(".navbar-fixed-top").hide();
     $(".container-fluid").css("padding-top", "0px");
 
+    $("#add-folder-button").click((e) ->
+        SvgCanvasBase.addFolder()
+    )
+    $("#delete-item-button").click((e) ->
+        SvgCanvasBase.deleteSelectdItem()
+    )
+
     initPropertyEdit()
-    @cloneControlView.hide()
+    cloneControlView.hide()
 )
 
 @excutePathBoolean = (operate) =>
@@ -238,9 +248,10 @@ $(document).ready(() =>
                 "transform": ""
                 })
             SvgCanvasBase.removeItem(item2)
-            cloneControlView.initControls([item1])
+            cloneControlView.setItems([item1])
 
-@initPropertyEdit = () =>
+@propertyEditSet = {}
+@initPropertyEdit = () ->
     propertyEditSet = new PropertyEditSetView(el:$("#property-table"))
 
     for attr in ["fill-spe", "stroke-spe"]

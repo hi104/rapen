@@ -3,10 +3,24 @@ class @SvgElement extends Backbone.Model
     initialize: () =>
         @unSelect()
         @unLock()
+        @show()
+        @unSuspendRemove()
+
+    setFolder:(folder)->
+        @folder = folder
+
+    removeFromFolder:() ->
+        @folder.remove(@)
+
+    pergeFromFolder:() ->
+        @suspendRemove()
+        @removeFromFolder()
+        @unSuspendRemove()
 
     setElement:(element) =>
         @el = element
         @$el = $(element)
+        @attr("data-name", @$el.data("name"))
 
     setMatrix:(matrix) =>
         SVGUtil.setMatrixTransform(@el, matrix)
@@ -21,7 +35,7 @@ class @SvgElement extends Backbone.Model
         $(@el).attr(attrs)
         @set(attrs)
 #
-#select when clone control selected item
+# select when clone control selected item
 #
     select:() => @set("_selected", true)
     unSelect:() => @set("_selected", false)
@@ -36,14 +50,32 @@ class @SvgElement extends Backbone.Model
         else
             @lock()
 
-    isVisibled:() => $(@el).css('display') != "none"
-    show:() => $(@el).css('display', "inline")
-    hide:() => $(@el).css('display', "none")
+    isVisibled:() =>
+        @get('_visible')
+        # $(@el).css('display') != "none"
 
-    group:() =>
+    show:() =>
+        @set('_visible', true)
+        $(@el).css('display', "inline")
+
+    hide:() =>
+        @set('_visible', false)
+        $(@el).css('display', "none")
+
+
+    suspendRemove:()->
+        @set("_suspend_remove", true)
+
+    unSuspendRemove:()->
+        @set("_suspend_remove", false)
+
+    isSuspendRemove:()->
+        @get("_suspend_remove")
+
+    group:() ->
         @set("_grouped", true)
 
-    isGrouped:() =>
+    isGrouped:() ->
         @get("_grouped")
 
     getBBox:() =>

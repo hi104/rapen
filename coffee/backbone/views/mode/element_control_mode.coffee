@@ -12,22 +12,27 @@ class @ElementControlMode
 
     onEvent:(event, sender, e, options) =>
         if sender instanceof SvgElementView
-            @_onSvgElementView.apply(@, arguments)
+            if sender.model.constructor == SvgElement
+                @_onSvgElementView.apply(@, arguments)
         else if sender instanceof SvgCanvas
             @_onSvgCanvas.apply(@, arguments)
 
     _onSvgCanvas:(event, sender, e, options) =>
         if event  == "onMouseDown" and not e.altKey
-            @regionView.canvas = @maneger.getCanvas()
-            @listenToOnce(@regionView, "onRegionDrop", @_onRegionDrop)
-            @regionView.startSelectRegion(e)
+            control = @getControl()
+            if e.shiftKey and (control.item_list.length > 0)
+                control.getControl().position_control.onMouseDown(e)
+            else
+                @regionView.canvas = @maneger.getCanvas()
+                @listenToOnce(@regionView, "onRegionDrop", @_onRegionDrop)
+                @regionView.startSelectRegion(e)
 
     _onRegionDrop:(region) =>
         contain_items = @_getRegionContainItems(@maneger.canvas.getItems(), @regionView)
         control = @getControl()
         control.clear()
         if contain_items.length > 0
-            control.initControls(contain_items)
+            control.setItems(contain_items)
 
     _getRegionContainItems:(_items, region)=>
         items = _items.filter((item) => not item.isLocked())

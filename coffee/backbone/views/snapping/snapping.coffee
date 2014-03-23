@@ -23,12 +23,15 @@ class @Snapping
         #         point = point.matrixTransform(canvas_matrix)
         #         snap_points.push({type:"grid", point:point})
 
+        item_list = canvas_base.getItems()
+        item_list = item_list.filter((item) -> item.constructor == SvgElement)
+
         if none_filter
             #TODO global object
             clone_origin_list = cloneControlView.item_list.map((item) => item.get("origin_model"))
-            snap_item_list = canvas_base.item_list.filter((item) => not _.contains(clone_origin_list, item))
+            snap_item_list = item_list.filter((item) => not _.contains(clone_origin_list, item))
         else
-            snap_item_list = canvas_base.item_list.toArray()
+            snap_item_list = item_list
 
         for item in snap_item_list
             do(item) =>

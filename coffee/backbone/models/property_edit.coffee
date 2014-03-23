@@ -6,7 +6,6 @@ class @PropertyEdit extends Backbone.Model
     setAttr:(values) =>
         @set(values)
         @_bindingModel.attr(values) if(@_bindingModel)
-        @trigger("update")
 
     updateElement:() =>
         attrs = {}

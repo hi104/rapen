@@ -23,9 +23,8 @@
     PropertyEdit.prototype.setAttr = function(values) {
       this.set(values);
       if (this._bindingModel) {
-        this._bindingModel.attr(values);
+        return this._bindingModel.attr(values);
       }
-      return this.trigger("update");
     };
 
     PropertyEdit.prototype.updateElement = function() {
@@ -76,8 +75,6 @@
       this.getScreenCTM = __bind(this.getScreenCTM, this);
       this.getCTM = __bind(this.getCTM, this);
       this.getBBox = __bind(this.getBBox, this);
-      this.isGrouped = __bind(this.isGrouped, this);
-      this.group = __bind(this.group, this);
       this.hide = __bind(this.hide, this);
       this.show = __bind(this.show, this);
       this.isVisibled = __bind(this.isVisibled, this);
@@ -98,12 +95,29 @@
 
     SvgElement.prototype.initialize = function() {
       this.unSelect();
-      return this.unLock();
+      this.unLock();
+      this.show();
+      return this.unSuspendRemove();
+    };
+
+    SvgElement.prototype.setFolder = function(folder) {
+      return this.folder = folder;
+    };
+
+    SvgElement.prototype.removeFromFolder = function() {
+      return this.folder.remove(this);
+    };
+
+    SvgElement.prototype.pergeFromFolder = function() {
+      this.suspendRemove();
+      this.removeFromFolder();
+      return this.unSuspendRemove();
     };
 
     SvgElement.prototype.setElement = function(element) {
       this.el = element;
-      return this.$el = $(element);
+      this.$el = $(element);
+      return this.attr("data-name", this.$el.data("name"));
     };
 
     SvgElement.prototype.setMatrix = function(matrix) {
@@ -158,15 +172,29 @@
     };
 
     SvgElement.prototype.isVisibled = function() {
-      return $(this.el).css('display') !== "none";
+      return this.get('_visible');
     };
 
     SvgElement.prototype.show = function() {
+      this.set('_visible', true);
       return $(this.el).css('display', "inline");
     };
 
     SvgElement.prototype.hide = function() {
+      this.set('_visible', false);
       return $(this.el).css('display', "none");
+    };
+
+    SvgElement.prototype.suspendRemove = function() {
+      return this.set("_suspend_remove", true);
+    };
+
+    SvgElement.prototype.unSuspendRemove = function() {
+      return this.set("_suspend_remove", false);
+    };
+
+    SvgElement.prototype.isSuspendRemove = function() {
+      return this.get("_suspend_remove");
     };
 
     SvgElement.prototype.group = function() {
@@ -317,6 +345,103 @@
     return SvgElementList;
 
   })(Backbone.Collection);
+
+}).call(this);
+
+(function() {
+  var _ref,
+    __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; },
+    __hasProp = {}.hasOwnProperty,
+    __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
+
+  this.SvgFolder = (function(_super) {
+    __extends(SvgFolder, _super);
+
+    function SvgFolder() {
+      this.close = __bind(this.close, this);
+      this.isOpen = __bind(this.isOpen, this);
+      this.open = __bind(this.open, this);
+      this.setControlViewEvent = __bind(this.setControlViewEvent, this);
+      this.onAddItem = __bind(this.onAddItem, this);
+      _ref = SvgFolder.__super__.constructor.apply(this, arguments);
+      return _ref;
+    }
+
+    SvgFolder.prototype.initialize = function() {
+      var _this = this;
+      this.items = new SvgElementList();
+      this.items.comparator = function(e) {
+        return e.$el.index();
+      };
+      this.listenTo(this.items, 'add', this.onAddItem);
+      this.listenTo(this, "remove", this.onRemove);
+      this.open();
+      return SvgFolder.__super__.initialize.call(this);
+    };
+
+    SvgFolder.prototype.setManager = function(manager) {
+      return this.manager = manager;
+    };
+
+    SvgFolder.prototype.add = function(item, options) {
+      item.setFolder(this);
+      return this.items.add(item, options);
+    };
+
+    SvgFolder.prototype.remove = function(item) {
+      item.setFolder(null);
+      return this.items.remove(item);
+    };
+
+    SvgFolder.prototype.onRemove = function() {
+      var items,
+        _this = this;
+      if (this.isSuspendRemove()) {
+        return;
+      }
+      items = this.items.toArray();
+      return items.forEach(function(item) {
+        return _this.items.remove(item);
+      });
+    };
+
+    SvgFolder.prototype.onAddItem = function(item) {
+      var view;
+      view = new SvgElementView({
+        model: item,
+        el: item.el
+      });
+      this.setControlViewEvent(view);
+      view.render();
+      if (this.$el.get(0) !== view.$el.parent().get(0)) {
+        return this.$el.append(view.$el);
+      }
+    };
+
+    SvgFolder.prototype.setControlViewEvent = function(view) {
+      var _this = this;
+      return ["onMouseDown", "onDblClick", "onClick"].forEach(function(event) {
+        return view.bind(event, function(obj, e) {
+          return _this.manager.onEvent(event, obj, e);
+        });
+      });
+    };
+
+    SvgFolder.prototype.open = function() {
+      return this.set("_open", true);
+    };
+
+    SvgFolder.prototype.isOpen = function() {
+      return this.get("_open");
+    };
+
+    SvgFolder.prototype.close = function() {
+      return this.set("_open", false);
+    };
+
+    return SvgFolder;
+
+  })(SvgElement);
 
 }).call(this);
 
@@ -553,31 +678,31 @@
     __extends(CloneControlView, _super);
 
     function CloneControlView() {
-      this.attachDragEvent = __bind(this.attachDragEvent, this);
       this._createCopyItems = __bind(this._createCopyItems, this);
-      this.attachCopyDragEvent = __bind(this.attachCopyDragEvent, this);
       this._copyMode = __bind(this._copyMode, this);
+      this.attachCopyDragEvent = __bind(this.attachCopyDragEvent, this);
+      this.attachDragEvent = __bind(this.attachDragEvent, this);
       this.onEvent = __bind(this.onEvent, this);
       this._setControlViewEvent = __bind(this._setControlViewEvent, this);
       this._setChildControlEvent = __bind(this._setChildControlEvent, this);
       this.render = __bind(this.render, this);
-      this.clear = __bind(this.clear, this);
       this.show = __bind(this.show, this);
       this.hide = __bind(this.hide, this);
+      this.exists = __bind(this.exists, this);
+      this.clear = __bind(this.clear, this);
       this.addItem = __bind(this.addItem, this);
       this.removeItem = __bind(this.removeItem, this);
-      this.exists = __bind(this.exists, this);
-      this.initControls = __bind(this.initControls, this);
+      this.setItems = __bind(this.setItems, this);
       this.update = __bind(this.update, this);
       this._viewUpdate = __bind(this._viewUpdate, this);
       this._updateForOneItem = __bind(this._updateForOneItem, this);
-      this._onRemoveItem = __bind(this._onRemoveItem, this);
-      this._onAddItem = __bind(this._onAddItem, this);
       this.firstOriginalItem = __bind(this.firstOriginalItem, this);
       this.firstItem = __bind(this.firstItem, this);
       this.isOneItem = __bind(this.isOneItem, this);
       this.getControlItem = __bind(this.getControlItem, this);
       this._onChangeList = __bind(this._onChangeList, this);
+      this._onRemoveItem = __bind(this._onRemoveItem, this);
+      this._onAddItem = __bind(this._onAddItem, this);
       this.setCanvas = __bind(this.setCanvas, this);
       this.getControl = __bind(this.getControl, this);
       this.initialize = __bind(this.initialize, this);
@@ -621,6 +746,23 @@
       return this.canvas = canvas;
     };
 
+    CloneControlView.prototype._onAddItem = function(item) {
+      var view;
+      view = new SvgElementView({
+        model: item,
+        el: item.el
+      });
+      item.set("view", view);
+      this._setChildControlEvent(view);
+      this.line_list_view.item_list.add(item);
+      view.render();
+      return item.get("origin_model").select();
+    };
+
+    CloneControlView.prototype._onRemoveItem = function(item) {
+      return item.get("origin_model").unSelect();
+    };
+
     CloneControlView.prototype._onChangeList = function() {
       var item;
       this.itemControl.clear();
@@ -631,11 +773,16 @@
         this.itemControl.setItem(item);
         this.line_list_view.$el.hide();
         this.$el.hide();
+        this.lazyShow();
       } else if (this.item_list.length > 0) {
         this.listenTo(this.item, "change", this.update);
         this.itemControl.setItem(this.item);
         this.line_list_view.$el.show();
         this.$el.show();
+        this.lazyShow();
+      } else {
+        this.clear();
+        this.hide();
       }
       return this.trigger("onChangeList", this);
     };
@@ -658,23 +805,6 @@
       } else {
         return null;
       }
-    };
-
-    CloneControlView.prototype._onAddItem = function(item) {
-      var view;
-      view = new SvgElementView({
-        model: item,
-        el: item.el
-      });
-      item.set("view", view);
-      this._setChildControlEvent(view);
-      this.line_list_view.item_list.add(item);
-      view.render();
-      return item.get("origin_model").select();
-    };
-
-    CloneControlView.prototype._onRemoveItem = function(item) {
-      return item.get("origin_model").unSelect();
     };
 
     CloneControlView.prototype._updateForOneItem = function() {
@@ -713,7 +843,7 @@
       return this.line_list_view.render();
     };
 
-    CloneControlView.prototype.initControls = function(models) {
+    CloneControlView.prototype.setItems = function(models) {
       var model, _i, _len, _results;
       this.clear();
       _results = [];
@@ -722,13 +852,6 @@
         _results.push(this.addItem(model));
       }
       return _results;
-    };
-
-    CloneControlView.prototype.exists = function(model) {
-      var _this = this;
-      return this.item_list.find(function(e) {
-        return e.get("origin_model") === model;
-      });
     };
 
     CloneControlView.prototype.removeItem = function(model) {
@@ -755,6 +878,25 @@
       return item;
     };
 
+    CloneControlView.prototype.clear = function() {
+      var _results;
+      this.$el.attr("transform", "");
+      this.$el.empty();
+      this.line_list_view.clear();
+      _results = [];
+      while (this.item_list.length > 0) {
+        _results.push(this.item_list.remove(this.item_list.first()));
+      }
+      return _results;
+    };
+
+    CloneControlView.prototype.exists = function(model) {
+      var _this = this;
+      return this.item_list.find(function(e) {
+        return e.get("origin_model") === model;
+      });
+    };
+
     CloneControlView.prototype.hide = function() {
       this.$el.hide();
       this.itemControl.hide();
@@ -765,19 +907,6 @@
       this.$el.show();
       this.itemControl.show();
       return this.line_list_view.$el.show();
-    };
-
-    CloneControlView.prototype.clear = function() {
-      var _results;
-      this.hide();
-      this.$el.attr("transform", "");
-      this.$el.empty();
-      this.line_list_view.clear();
-      _results = [];
-      while (this.item_list.length > 0) {
-        _results.push(this.item_list.remove(this.item_list.first()));
-      }
-      return _results;
     };
 
     CloneControlView.prototype.render = function() {
@@ -792,17 +921,15 @@
 
     CloneControlView.prototype.lazyRender = _.debounce(CloneControlView.prototype.render, 50);
 
+    CloneControlView.prototype.lazyShow = _.debounce(CloneControlView.prototype.show, 10);
+
     CloneControlView.prototype._setChildControlEvent = function(view) {
       var _this = this;
       return view.bind("onClick", function(obj, e) {
         if (e.shiftKey) {
           _this.item_list.remove(obj.model);
-          e.preventDefault();
-          e.stopPropagation();
-          _this.render();
-          if (_this.item_list.length === 0) {
-            return _this.clear();
-          }
+          _this.cancelEvent(e);
+          return _this.render();
         }
       });
     };
@@ -832,22 +959,19 @@
       }
     };
 
-    CloneControlView.prototype._copyMode = function(sender, e) {
-      this.line_list_view.$el.show();
-      this.line_list_view.render();
-      this.itemControl.clear();
-      this.stopListening();
-      this.listenTo(this.item, "change", this.update);
-      this.itemControl.show();
-      this.itemControl.setItem(this.item);
-      this.itemControl.render();
-      this.cancelEvent(e);
-      return this.attachCopyDragEvent(sender, e);
-    };
-
-    CloneControlView.prototype.cancelEvent = function(e) {
-      e.preventDefault();
-      return e.stopPropagation();
+    CloneControlView.prototype.attachDragEvent = function(sender, e) {
+      var ondrop,
+        _this = this;
+      $(document).mousemove(sender.onDragging);
+      ondrop = function(e) {
+        if (sender.onDrop) {
+          sender.onDrop(e);
+        }
+        $(document).unbind('mousemove', sender.onDragging);
+        $(document).unbind('mouseup', ondrop);
+        return _this.cancelEvent(e);
+      };
+      return $(document).mouseup(ondrop);
     };
 
     CloneControlView.prototype.attachCopyDragEvent = function(sender, e) {
@@ -865,10 +989,23 @@
         $(document).unbind('mousemove', sender.onDragging);
         $(document).unbind('mouseup', ondrop);
         _this.$el.attr("opacity", 0);
-        _this.initControls(_this._createCopyItems());
+        _this.setItems(_this._createCopyItems());
         return _this.cancelEvent(e);
       };
       return $(document).mouseup(ondrop);
+    };
+
+    CloneControlView.prototype._copyMode = function(sender, e) {
+      this.line_list_view.$el.show();
+      this.line_list_view.render();
+      this.itemControl.clear();
+      this.stopListening();
+      this.listenTo(this.item, "change", this.update);
+      this.itemControl.show();
+      this.itemControl.setItem(this.item);
+      this.itemControl.render();
+      this.cancelEvent(e);
+      return this.attachCopyDragEvent(sender, e);
     };
 
     CloneControlView.prototype._createCopyItems = function() {
@@ -890,19 +1027,9 @@
       return copy_items;
     };
 
-    CloneControlView.prototype.attachDragEvent = function(sender, e) {
-      var ondrop,
-        _this = this;
-      $(document).mousemove(sender.onDragging);
-      ondrop = function(e) {
-        if (sender.onDrop) {
-          sender.onDrop(e);
-        }
-        $(document).unbind('mousemove', sender.onDragging);
-        $(document).unbind('mouseup', ondrop);
-        return _this.cancelEvent(e);
-      };
-      return $(document).mouseup(ondrop);
+    CloneControlView.prototype.cancelEvent = function(e) {
+      e.preventDefault();
+      return e.stopPropagation();
     };
 
     return CloneControlView;
@@ -956,6 +1083,9 @@
       },
       "ungroup": function() {
         return SvgCanvasBase.unGroupSelectedItem();
+      },
+      "addFolder": function() {
+        return SvgCanvasBase.addFolderSelectedItem();
       },
       "unite": function() {
         return excutePathBoolean("unite");
@@ -2245,24 +2375,26 @@
     ItemControl.prototype.hide = function() {
       this.$el.hide();
       if (this.select_line_view) {
-        return this.select_line_view.$el.hide();
+        this.select_line_view.$el.hide();
       }
+      return this._visible = false;
     };
 
     ItemControl.prototype.show = function() {
       this.$el.show();
       if (this.select_line_view) {
-        return this.select_line_view.$el.show();
+        this.select_line_view.$el.show();
       }
+      this._visible = true;
+      return this.render();
     };
 
     ItemControl.prototype.render = function() {
-      if (this.selectitem) {
-        this.show();
-      } else {
-        this.hide();
+      if (!this._visible) {
+        return;
       }
       if (!this.selectitem) {
+        this.hide();
         return;
       }
       this.select_line_view.render();
@@ -2316,17 +2448,25 @@
 
     ElementControlMode.prototype.onEvent = function(event, sender, e, options) {
       if (sender instanceof SvgElementView) {
-        return this._onSvgElementView.apply(this, arguments);
+        if (sender.model.constructor === SvgElement) {
+          return this._onSvgElementView.apply(this, arguments);
+        }
       } else if (sender instanceof SvgCanvas) {
         return this._onSvgCanvas.apply(this, arguments);
       }
     };
 
     ElementControlMode.prototype._onSvgCanvas = function(event, sender, e, options) {
+      var control;
       if (event === "onMouseDown" && !e.altKey) {
-        this.regionView.canvas = this.maneger.getCanvas();
-        this.listenToOnce(this.regionView, "onRegionDrop", this._onRegionDrop);
-        return this.regionView.startSelectRegion(e);
+        control = this.getControl();
+        if (e.shiftKey && (control.item_list.length > 0)) {
+          return control.getControl().position_control.onMouseDown(e);
+        } else {
+          this.regionView.canvas = this.maneger.getCanvas();
+          this.listenToOnce(this.regionView, "onRegionDrop", this._onRegionDrop);
+          return this.regionView.startSelectRegion(e);
+        }
       }
     };
 
@@ -2336,7 +2476,7 @@
       control = this.getControl();
       control.clear();
       if (contain_items.length > 0) {
-        return control.initControls(contain_items);
+        return control.setItems(contain_items);
       }
     };
 
@@ -2867,7 +3007,7 @@
     __extends(InspectorListView, _super);
 
     function InspectorListView() {
-      this.sortByIndex = __bind(this.sortByIndex, this);
+      this.sortElementByIndex = __bind(this.sortElementByIndex, this);
       this.removeItem = __bind(this.removeItem, this);
       this.addItem = __bind(this.addItem, this);
       this.initialize = __bind(this.initialize, this);
@@ -2878,7 +3018,7 @@
     InspectorListView.prototype.tagName = "ul";
 
     InspectorListView.prototype.initialize = function() {
-      this.$el.attr("class", "list-unstyled");
+      this.$el.addClass("list-unstyled");
       this.item_list = this.options.item_list;
       this.control = this.options.control;
       this.listenTo(this.item_list, "add", this.addItem);
@@ -2887,26 +3027,34 @@
     };
 
     InspectorListView.prototype.addItem = function(item) {
-      var view;
-      view = new InspectorView({
+      var klass, view;
+      if (item.constructor === SvgElement) {
+        klass = InspectorView;
+      }
+      if (item.constructor === SvgFolder) {
+        klass = InspectorFolderView;
+      }
+      view = new klass({
         model: item,
         control: this.control
       });
       this.inspector_views.push(view);
-      return this.$el.prepend(view.el);
+      this.$el.prepend(view.el);
+      return this.sortElementByIndex();
     };
 
     InspectorListView.prototype.removeItem = function(item) {
-      var index, v,
+      var index, view,
         _this = this;
-      v = _(this.inspector_views).find(function(e) {
+      view = _(this.inspector_views).find(function(e) {
         return e.model === item;
       });
-      index = this.inspector_views.indexOf(v);
-      return this.inspector_views.splice(index, 1);
+      index = this.inspector_views.indexOf(view);
+      this.inspector_views.splice(index, 1);
+      return this.sortElementByIndex();
     };
 
-    InspectorListView.prototype.sortByIndex = function() {
+    InspectorListView.prototype.sortElementByIndex = function() {
       var sorted_views,
         _this = this;
       sorted_views = _(this.inspector_views).sortBy(function(e) {
@@ -2915,6 +3063,13 @@
       return sorted_views.forEach(function(e) {
         return _this.$el.prepend(e.el);
       });
+    };
+
+    InspectorListView.prototype.remove = function() {
+      this.inspector_views.forEach(function(view) {
+        return view.remove();
+      });
+      return InspectorListView.__super__.remove.call(this);
     };
 
     return InspectorListView;
@@ -2937,6 +3092,9 @@
       this.onClickVisible = __bind(this.onClickVisible, this);
       this.onClickLock = __bind(this.onClickLock, this);
       this.onClickSelect = __bind(this.onClickSelect, this);
+      this.onMouseDown = __bind(this.onMouseDown, this);
+      this.onMouseOver = __bind(this.onMouseOver, this);
+      this.onMouseLeave = __bind(this.onMouseLeave, this);
       this.initialize = __bind(this.initialize, this);
       _ref = InspectorView.__super__.constructor.apply(this, arguments);
       return _ref;
@@ -2955,20 +3113,66 @@
       return {
         "click .lock-element": "onClickLock",
         "click .select-element": "onClickSelect",
-        "click .visible-element": "onClickVisible"
+        "click .visible-element": "onClickVisible",
+        "mousedown .move-element": "onMouseDown",
+        "mouseover": "onMouseOver",
+        "mouseleave": "onMouseLeave"
       };
     };
 
-    InspectorView.prototype.template = _.template('\
-        <div style="padding:5px;border-bottom:1px solid #ccc">\
-            <div style="border:1px solid black;margin:0px 5px;float:left;height:15px;width:15px;background-color:{{color}}" class="select-element"></div>\
-            lock: <input class="lock-element" type="checkbox" {{locked}}/>\
-            visible: <input class="visible-element" type="checkbox" {{visible}}/>\
-            {{element_type}}\
+    InspectorView.prototype.onMouseLeave = function(e) {
+      this.cancelEvent(e);
+      if (inspectorDragAndDrop.isEnable()) {
+        return inspectorDragAndDrop.onMouseLeave(e, this);
+      }
+    };
+
+    InspectorView.prototype.onMouseOver = function(e) {
+      this.cancelEvent(e);
+      if (inspectorDragAndDrop.isEnable()) {
+        return inspectorDragAndDrop.onMouseOver(e, this);
+      }
+    };
+
+    InspectorView.prototype.onMouseDown = function(e) {
+      this.cancelEvent(e);
+      return inspectorDragAndDrop.onMouseDown(e, this);
+    };
+
+    InspectorView.prototype.cancelEvent = function(e) {
+      e.preventDefault();
+      return e.stopPropagation();
+    };
+
+    InspectorView._rowTemplate = '\
+        <div class="inspector-xs-block">\
+            <i class="move-element fa fa-arrows"></i>\
         </div>\
+        <div class="inspector-xs-block">\
+            <i class="open-element fa fa-caret-square-o-right"></i>\
+        </div>\
+        <div class="inspector-xs-block select-element" style="border:1px solid black">\
+        </div>\
+        <div style="float:left">\
+            <input style="width:100px" class="name"/>\
+        </div>\
+        <div style="float:right">\
+            <span style="margin:0px 5px">\
+                <i class="lock-element fa fa-lock"></i>\
+            </span>\
+            <span style="margin:0px 5px">\
+                <i class="visible-element fa fa-eye"></i>\
+            </span>\
+        </div>\
+        <div style="clear:both"></div>';
+
+    InspectorView.prototype.template = _.template('\
+        <div class="inspector-row">\
+        ' + InspectorView._rowTemplate + '</div>\
     ');
 
-    InspectorView.prototype.onClickSelect = function() {
+    InspectorView.prototype.onClickSelect = function(e) {
+      this.cancelEvent(e);
       if (this.model.isSelected()) {
         return this.control.removeItem(this.model);
       } else {
@@ -2976,11 +3180,13 @@
       }
     };
 
-    InspectorView.prototype.onClickLock = function() {
+    InspectorView.prototype.onClickLock = function(e) {
+      this.cancelEvent(e);
       return this.model.toggleLock();
     };
 
-    InspectorView.prototype.onClickVisible = function() {
+    InspectorView.prototype.onClickVisible = function(e) {
+      this.cancelEvent(e);
       if (this.model.isVisibled()) {
         return this.model.hide();
       } else {
@@ -2988,24 +3194,259 @@
       }
     };
 
-    InspectorView.prototype.render = function() {
-      var color, locked, visible;
-      this.$el.empty();
-      locked = this.model.isLocked() ? "checked" : "";
+    InspectorView.prototype._initElement = function() {
+      var container, name;
+      name = this.model.get("data-name");
+      this.$el.html(this.template());
+      container = this.$el.find("div");
+      container.find(".open-element").hide();
+      this.select_el = container.children(".select-element");
+      this.lock_el = container.find(".lock-element");
+      return this.visible_el = container.find(".visible-element");
+    };
+
+    InspectorView.prototype._render = function() {
+      var color;
       color = this.model.isSelected() ? "skyblue" : "white";
-      visible = this.model.isVisibled() ? "checked" : "";
-      this.$el.html(this.template({
-        element_type: this.model.el.constructor.name,
-        locked: locked,
-        color: color,
-        visible: visible
-      }));
+      this.select_el.css("background-color", color);
+      this.$el.find("div").find(".name").val(this.model.get("data-name"));
+      this.toggleClass(this.lock_el, "fa-lock", "fa-unlock-alt", this.model.isLocked());
+      return this.toggleClass(this.visible_el, "fa-eye", "fa-eye-slash", this.model.isVisibled());
+    };
+
+    InspectorView.prototype.rowElement = function() {
+      return this.$el.children("div").first();
+    };
+
+    InspectorView.prototype.setSelectedStyle = function() {
+      return this.rowElement().css("background-color", "#ccc");
+    };
+
+    InspectorView.prototype.setDefalutStyle = function() {
+      this.rowElement().css("background-color", "white");
+      return this.rowElement().css("border-bottom", "1px solid #ccc");
+    };
+
+    InspectorView.prototype.setOverStyle = function() {
+      return this.rowElement().css("border-bottom", "2px solid blue");
+    };
+
+    InspectorView.prototype.toggleClass = function(el, add_class, remove_class, none_swap) {
+      if (none_swap == null) {
+        none_swap = true;
+      }
+      if (none_swap) {
+        el.addClass(add_class);
+        return el.removeClass(remove_class);
+      } else {
+        el.addClass(remove_class);
+        return el.removeClass(add_class);
+      }
+    };
+
+    InspectorView.prototype.render = function() {
+      if (this.$el.find("div").length === 0) {
+        this._initElement();
+      }
+      this._render();
       return this;
     };
 
     return InspectorView;
 
   })(Backbone.View);
+
+}).call(this);
+
+(function() {
+  var _ref,
+    __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; },
+    __hasProp = {}.hasOwnProperty,
+    __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
+
+  this.InspectorFolderView = (function(_super) {
+    __extends(InspectorFolderView, _super);
+
+    function InspectorFolderView() {
+      this.render = __bind(this.render, this);
+      this.onClickOpen = __bind(this.onClickOpen, this);
+      this.initialize = __bind(this.initialize, this);
+      _ref = InspectorFolderView.__super__.constructor.apply(this, arguments);
+      return _ref;
+    }
+
+    InspectorFolderView.prototype.tagName = "li";
+
+    InspectorFolderView.prototype.initialize = function() {
+      this.control = this.options.control;
+      this.listenTo(this.model, 'remove', this.remove);
+      this.listenTo(this.model, 'change', this.render);
+      return this.render();
+    };
+
+    InspectorFolderView.prototype.events = function() {
+      return {
+        "click .inspetor-folder .open-element": "onClickOpen",
+        "click .inspetor-folder .select-element": "onClickSelect",
+        "click .inspetor-folder .visible-element": "onClickVisible",
+        "mousedown .inspetor-folder .move-element": "onMouseDown",
+        "mouseover .inspetor-folder": "onMouseOver",
+        "mouseleave .inspetor-folder": "onMouseLeave"
+      };
+    };
+
+    InspectorFolderView.prototype.template = _.template('\
+        <div class="inspetor-folder inspector-row">\
+        ' + InspectorView._rowTemplate + '</div>\
+        <ul class="inspector-items"></ul>\
+        <div style="height:1px;background-color:#eee"></div>\
+    ');
+
+    InspectorFolderView.prototype.onClickOpen = function(e) {
+      this.cancelEvent(e);
+      if (this.model.isOpen()) {
+        return this.model.close();
+      } else {
+        return this.model.open();
+      }
+    };
+
+    InspectorFolderView.prototype._initElement = function() {
+      var container, list_view, ul,
+        _this = this;
+      this.$el.html(this.template());
+      ul = this.$el.find("ul").first();
+      list_view = new InspectorListView({
+        el: ul,
+        control: this.control,
+        item_list: this.model.items
+      });
+      list_view.item_list.forEach(function(item) {
+        return item.trigger('add', item, list_view.item_list, {});
+      });
+      list_view.$el.css("margin-left", "5px");
+      this.list_view = list_view;
+      container = this.$el.children(".inspetor-folder");
+      this.select_el = container.children(".select-element");
+      this.open_el = container.find(".open-element");
+      return this.visible_el = container.find(".visible-element");
+    };
+
+    InspectorFolderView.prototype._render = function() {
+      var color, container, items_el;
+      color = this.model.isSelected() ? "skyblue" : "white";
+      container = this.$el.children(".inspetor-folder");
+      this.select_el.css("background-color", color);
+      container.find(".name").val(this.model.get("data-name"));
+      items_el = this.$el.find("ul").first();
+      if (this.model.isOpen()) {
+        items_el.show();
+      } else {
+        items_el.hide();
+      }
+      this.toggleClass(this.open_el, "fa-caret-square-o-down", "fa-caret-square-o-right", this.model.isOpen());
+      return this.toggleClass(this.visible_el, "fa-eye", "fa-eye-slash", this.model.isVisibled());
+    };
+
+    InspectorFolderView.prototype.render = function() {
+      if (this.$el.children("div").length === 0) {
+        this._initElement();
+      }
+      this._render();
+      return this;
+    };
+
+    InspectorFolderView.prototype.remove = function() {
+      var _ref1;
+      if ((_ref1 = this.list_view) != null) {
+        _ref1.remove();
+      }
+      return InspectorFolderView.__super__.remove.call(this);
+    };
+
+    return InspectorFolderView;
+
+  })(InspectorView);
+
+}).call(this);
+
+(function() {
+  var __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
+
+  this.InspectorDragAndDrop = (function() {
+    function InspectorDragAndDrop() {
+      this.onMouseUp = __bind(this.onMouseUp, this);
+    }
+
+    InspectorDragAndDrop.prototype.initialize = function() {
+      this.select_view = null;
+      return this.over_view = null;
+    };
+
+    InspectorDragAndDrop.prototype.enable = function() {
+      return this._enable = true;
+    };
+
+    InspectorDragAndDrop.prototype.disable = function() {
+      this.select_view.setDefalutStyle();
+      if (this.over_view) {
+        this.over_view.setDefalutStyle();
+      }
+      this.select_view = null;
+      this.over_view = null;
+      return this._enable = false;
+    };
+
+    InspectorDragAndDrop.prototype.isEnable = function() {
+      return this._enable;
+    };
+
+    InspectorDragAndDrop.prototype.onMouseDown = function(e, view) {
+      this.enable();
+      this.select_view = view;
+      this.select_view.setSelectedStyle();
+      return $(document).mouseup(this.onMouseUp);
+    };
+
+    InspectorDragAndDrop.prototype.onMouseLeave = function(e, view) {
+      return view.setDefalutStyle();
+    };
+
+    InspectorDragAndDrop.prototype.onMouseOver = function(e, view) {
+      this.over_view = view;
+      return view.setOverStyle();
+    };
+
+    InspectorDragAndDrop.prototype.onMouseUp = function(e) {
+      var _ref;
+      InspectorDragAndDrop.moveToElement(this.select_view.model, (_ref = this.over_view) != null ? _ref.model : void 0);
+      this.disable();
+      e.preventDefault();
+      e.stopPropagation();
+      return $(document).unbind('mouseup', this.onMouseUp);
+    };
+
+    InspectorDragAndDrop.moveToElement = function(from, to) {
+      if (!to) {
+        return;
+      }
+      if (from === to) {
+        return;
+      }
+      if (to.constructor === SvgElement) {
+        to.$el.before(from.$el);
+        from.pergeFromFolder();
+        return to.folder.add(from);
+      } else {
+        to.$el.append(from.$el);
+        from.pergeFromFolder();
+        return to.add(from);
+      }
+    };
+
+    return InspectorDragAndDrop;
+
+  })();
 
 }).call(this);
 
@@ -3099,29 +3540,8 @@
       return $(document).mouseup(this.onMouseDrop);
     };
 
-    SvgCurveView.prototype.pointAdd = function(p, p2) {
-      return {
-        x: p.x + p2.x,
-        y: p.y + p2.y
-      };
-    };
-
-    SvgCurveView.prototype.pointSub = function(p, p2) {
-      return {
-        x: p.x - p2.x,
-        y: p.y - p2.y
-      };
-    };
-
-    SvgCurveView.prototype.pointMultiply = function(p, val) {
-      return {
-        x: p.x * val,
-        y: p.y * val
-      };
-    };
-
     SvgCurveView.prototype.onMouseMove = function(e) {
-      var center, center_x, center_y, div, matrix, next, next_p, next_vec, point, point_vec, point_vec2, seg, seg_p, seg_vec;
+      var c, center, center_x, center_y, div, matrix, n, n_dist, next, next_p, next_vec, point, point2_vec, point_vec, point_vec2, seg, seg_p, seg_vec, v;
       seg = this.segment;
       next = this.segment.nextSegment;
       seg_p = seg.getPoint();
@@ -3143,16 +3563,30 @@
       matrix = this.item.getScreenCTM();
       point = SVGUtil.createPoint(e.pageX, e.pageY);
       point = point.matrixTransform(matrix.inverse());
-      point_vec = this.pointSub(point, center);
-      point_vec2 = this.pointMultiply(point_vec, 2);
-      point_vec2 = this.pointAdd(point_vec2, center);
-      seg_vec = this.pointSub(point_vec2, seg_p);
-      next_vec = this.pointSub(point_vec2, next_p);
-      div = 2 / 3;
-      seg_vec = this.pointMultiply(seg_vec, div);
-      next_vec = this.pointMultiply(next_vec, div);
-      seg.handleOut.getPoint().setPoint(seg_vec.x, seg_vec.y);
-      return next.handleIn.getPoint().setPoint(next_vec.x, next_vec.y);
+      if (e.shiftKey) {
+        point_vec = VectorUtil.sub(point, seg_p);
+        point2_vec = VectorUtil.sub(next_p, seg_p);
+        c = VectorUtil.dot(point_vec, point2_vec);
+        n = point2_vec;
+        n_dist = VectorUtil.dist(n);
+        n_dist = n_dist * n_dist;
+        v = VectorUtil.multiply(VectorUtil.multiply(n, c), 1 / n_dist);
+        v = VectorUtil.sub(point_vec, v);
+        v = VectorUtil.multiply(v, 4 / 3);
+        seg.handleOut.getPoint().setPoint(v.x, v.y);
+        return next.handleIn.getPoint().setPoint(v.x, v.y);
+      } else {
+        point_vec = VectorUtil.sub(point, center);
+        point_vec2 = VectorUtil.multiply(point_vec, 2);
+        point_vec2 = VectorUtil.add(point_vec2, center);
+        seg_vec = VectorUtil.sub(point_vec2, seg_p);
+        next_vec = VectorUtil.sub(point_vec2, next_p);
+        div = 2 / 3;
+        seg_vec = VectorUtil.multiply(seg_vec, div);
+        next_vec = VectorUtil.multiply(next_vec, div);
+        seg.handleOut.getPoint().setPoint(seg_vec.x, seg_vec.y);
+        return next.handleIn.getPoint().setPoint(next_vec.x, next_vec.y);
+      }
     };
 
     SvgCurveView.prototype.onMouseDrop = function(e) {
@@ -3917,18 +4351,20 @@
     PropertyEditSetView.prototype.initialize = function() {
       this.prop_views = {};
       this.model = new PropertyEdit();
-      this.attrs = ["id", "class", "x", "y", "width", "height", "transform", "fill", "fill-spe", "fill-opacity", "stroke", "stroke-spe", "stroke-opacity", "stroke-width", "stroke-linecap", "stroke-dasharray", "stroke-offset", "style", "filter", "opacity", "xlink:href", "mask", "r", "rx", "ry", "writing-mode", "x1", "x2", "y1", "y2", "fill-rule", "d", "font-size", "font-family", "text-anchor", "visibility"];
+      this.attrs = ["id", "data-name", "class", "x", "y", "width", "height", "transform", "fill", "fill-spe", "fill-opacity", "stroke", "stroke-spe", "stroke-opacity", "stroke-width", "stroke-linecap", "stroke-dasharray", "stroke-offset", "style", "filter", "opacity", "xlink:href", "mask", "r", "rx", "ry", "writing-mode", "x1", "x2", "y1", "y2", "fill-rule", "d", "font-size", "font-family", "text-anchor", "visibility"];
       return this._init_view();
     };
 
     PropertyEditSetView.prototype._init_view = function() {
-      var attr, prop_view, type, _i, _len, _ref1, _results;
+      var attr, data_attr_re, klass, prop_view, type, _i, _len, _ref1, _results;
+      data_attr_re = /^data-/;
+      type = "text";
       _ref1 = this.attrs;
       _results = [];
       for (_i = 0, _len = _ref1.length; _i < _len; _i++) {
         attr = _ref1[_i];
-        type = "text";
-        prop_view = new PropertyEditView({
+        klass = attr.match(data_attr_re) ? PropertyEditView : DataPropertyEditView;
+        prop_view = new klass({
           inputType: type,
           attrName: attr,
           model: this.model
@@ -4025,7 +4461,6 @@
       return setTimeout(function() {
         var v;
         v = _this.input.val();
-        console.log(v);
         return _this.update(v);
       }, 10);
     };
@@ -4054,7 +4489,9 @@
       var value;
       value = this.model ? this.model.get(this.attrName) : "";
       this.input = this.$('.edit');
-      this.input.val(value);
+      if (this.input.val() !== value) {
+        this.input.val(value);
+      }
       return this;
     };
 
@@ -4065,6 +4502,25 @@
     return PropertyEditView;
 
   })(Backbone.View);
+
+}).call(this);
+
+(function() {
+  var _ref,
+    __hasProp = {}.hasOwnProperty,
+    __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
+
+  this.DataPropertyEditView = (function(_super) {
+    __extends(DataPropertyEditView, _super);
+
+    function DataPropertyEditView() {
+      _ref = DataPropertyEditView.__super__.constructor.apply(this, arguments);
+      return _ref;
+    }
+
+    return DataPropertyEditView;
+
+  })(PropertyEditView);
 
 }).call(this);
 
@@ -4545,22 +5001,26 @@
     };
 
     Snapping.getSnap = function(snap_target_points, none_filter) {
-      var canvas_base, canvas_matrix, clone_origin_list, item, movep, near_point, near_point_x, near_point_y, near_points, ondrop, snap_item_list, snap_points, x, y, _fn, _i, _j, _len, _len1, _ref;
+      var canvas_base, canvas_matrix, clone_origin_list, item, item_list, movep, near_point, near_point_x, near_point_y, near_points, ondrop, snap_item_list, snap_points, x, y, _fn, _i, _j, _len, _len1, _ref;
       if (none_filter == null) {
         none_filter = true;
       }
       canvas_base = SvgCanvasBase;
       snap_points = [];
       canvas_matrix = canvas_base.mainCanvas.getCTM();
+      item_list = canvas_base.getItems();
+      item_list = item_list.filter(function(item) {
+        return item.constructor === SvgElement;
+      });
       if (none_filter) {
         clone_origin_list = cloneControlView.item_list.map(function(item) {
           return item.get("origin_model");
         });
-        snap_item_list = canvas_base.item_list.filter(function(item) {
+        snap_item_list = item_list.filter(function(item) {
           return !_.contains(clone_origin_list, item);
         });
       } else {
-        snap_item_list = canvas_base.item_list.toArray();
+        snap_item_list = item_list;
       }
       _fn = function(item) {
         return _.each(item.getSnapPoints(), function(point) {
@@ -5036,13 +5496,13 @@
       this.group = __bind(this.group, this);
       this.unGroup = __bind(this.unGroup, this);
       this.unGroupSelectedItem = __bind(this.unGroupSelectedItem, this);
+      this.addFolderSelectedItem = __bind(this.addFolderSelectedItem, this);
       this.groupSelectedItem = __bind(this.groupSelectedItem, this);
       this.zoom = __bind(this.zoom, this);
       this.addZoomCenter = __bind(this.addZoomCenter, this);
-      this.setControlViewEvent = __bind(this.setControlViewEvent, this);
+      this.addFolder = __bind(this.addFolder, this);
       this.addElement = __bind(this.addElement, this);
       this.addItem = __bind(this.addItem, this);
-      this.onAddItem = __bind(this.onAddItem, this);
       this.removeItem = __bind(this.removeItem, this);
       this.generateId = __bind(this.generateId, this);
       _ref = SvgCanvas.__super__.constructor.apply(this, arguments);
@@ -5062,8 +5522,10 @@
       this.control = this.options.control;
       this.zoomValue = 1.0;
       this.unique_index = 0;
-      this.item_list = new SvgElementList();
-      return this.item_list.bind('add', this.onAddItem);
+      this.rootFolder = new SvgFolder();
+      this.rootFolder.setElement(this.mainCanvas);
+      this.rootFolder.setManager(this.manager);
+      return this.item_list = this.rootFolder.items;
     };
 
     SvgCanvas.prototype.generateId = function() {
@@ -5071,21 +5533,22 @@
     };
 
     SvgCanvas.prototype.getItems = function() {
-      return this.item_list;
+      return _.flatten(this._getItems(this.rootFolder));
+    };
+
+    SvgCanvas.prototype._getItems = function(folder) {
+      var _this = this;
+      return folder.items.map(function(item) {
+        if (item.constructor === SvgFolder) {
+          return _this._getItems(item);
+        } else {
+          return item;
+        }
+      });
     };
 
     SvgCanvas.prototype.removeItem = function(item) {
-      return this.item_list.remove(item);
-    };
-
-    SvgCanvas.prototype.onAddItem = function(item) {
-      var view;
-      view = new SvgElementView({
-        model: item,
-        el: item.el
-      });
-      this.setControlViewEvent(view);
-      return view.render();
+      return item.folder.remove(item);
     };
 
     SvgCanvas.prototype.addItem = function(item) {
@@ -5095,8 +5558,8 @@
         $(elm).attr("id", this.generateId());
       }
       $(elm).attr("class", "svg-control-item");
-      $(this.mainCanvas).append(elm);
-      this.item_list.add(item);
+      this.rootFolder.$el.append(elm);
+      this.rootFolder.add(item);
       return item;
     };
 
@@ -5107,13 +5570,23 @@
       return this.addItem(item);
     };
 
-    SvgCanvas.prototype.setControlViewEvent = function(view) {
-      var _this = this;
-      return ["onMouseDown", "onDblClick", "onClick"].forEach(function(event) {
-        return view.bind(event, function(obj, e) {
-          return _this.manager.onEvent(event, obj, e);
-        });
-      });
+    SvgCanvas.prototype.addFolder = function(targetFolder) {
+      var elm, folder;
+      if (targetFolder == null) {
+        targetFolder = this.rootFolder;
+      }
+      folder = new SvgFolder();
+      folder.setManager(this.manager);
+      folder.setElement(SVGUtil.createTag("g"));
+      folder.setFolder(targetFolder);
+      elm = folder.el;
+      if (!$(elm).attr("id")) {
+        $(elm).attr("id", this.generateId());
+      }
+      $(targetFolder.el).append(elm);
+      targetFolder.add(folder);
+      $(folder.el).attr("class", "svg-folder-item");
+      return folder;
     };
 
     SvgCanvas.prototype.onMouseWheel = function(e) {
@@ -5181,7 +5654,23 @@
           return item.get("origin_model");
         });
         group = this.group(clone_origin_list);
-        return this.control.initControls([group]);
+        return this.control.setItems([group]);
+      }
+    };
+
+    SvgCanvas.prototype.addFolderSelectedItem = function() {
+      var clone_origin_list, folder,
+        _this = this;
+      if (this.control.item_list.length > 0) {
+        clone_origin_list = this.getItems().filter(function(item) {
+          return item.isSelected();
+        });
+        console.log(this._getItems(this.rootFolder));
+        console.log(clone_origin_list);
+        folder = this.addFolder();
+        return clone_origin_list.forEach(function(item) {
+          return InspectorDragAndDrop.moveToElement(item, folder);
+        });
       }
     };
 
@@ -5217,7 +5706,7 @@
       items.forEach(function(item) {
         item.group();
         $(group_el).append(item.el);
-        return _this.item_list.remove(item);
+        return item.removeFromFolder();
       });
       return this.addElement(group_el);
     };
@@ -5297,7 +5786,6 @@
       this.onMouseDown = __bind(this.onMouseDown, this);
       this.onDblClick = __bind(this.onDblClick, this);
       this.onClick = __bind(this.onClick, this);
-      this.onContextmenu = __bind(this.onContextmenu, this);
       _ref = SvgElementView.__super__.constructor.apply(this, arguments);
       return _ref;
     }
@@ -5311,11 +5799,7 @@
     };
 
     SvgElementView.prototype.initialize = function() {
-      return this.model.on('remove', this.remove);
-    };
-
-    SvgElementView.prototype.onContextmenu = function(e) {
-      return false;
+      return this.listenTo(this.model, 'remove', this.remove);
     };
 
     SvgElementView.prototype.onClick = function(e) {
@@ -5334,7 +5818,10 @@
     };
 
     SvgElementView.prototype.remove = function() {
-      if (this.model.isGrouped()) {
+      if (this.model.isSuspendRemove()) {
+        this.stopListening();
+        return this.undelegateEvents();
+      } else if (this.model.isGrouped()) {
         this.stopListening();
         return this.undelegateEvents();
       } else {
@@ -6975,6 +7462,37 @@
       return (v1.x * v2.x) + (v1.y * v2.y);
     };
 
+    VectorUtil.add = function(v1, v2) {
+      return {
+        x: v1.x + v2.x,
+        y: v1.y + v2.y
+      };
+    };
+
+    VectorUtil.sub = function(v1, v2) {
+      return {
+        x: v1.x - v2.x,
+        y: v1.y - v2.y
+      };
+    };
+
+    VectorUtil.multiply = function(v1, val) {
+      return {
+        x: v1.x * val,
+        y: v1.y * val
+      };
+    };
+
+    VectorUtil.dist = function(v1, v2) {
+      var v;
+      if (v2) {
+        v = VectorUtil.sub(v1, v2);
+      } else {
+        v = v1;
+      }
+      return Math.sqrt((v.x * v.x) + (v.y * v.y));
+    };
+
     return VectorUtil;
 
   })();
@@ -7009,6 +7527,7 @@
       control: _this.cloneControlView,
       item_list: SvgCanvasBase.item_list
     });
+    _this.inspectorDragAndDrop = new InspectorDragAndDrop();
     $("#inspector-list").append(_this.inspectorListView.el);
     _this.SvgCanvasBase.bind("onZoom", function(e) {
       var canvas_transform;
@@ -7237,8 +7756,14 @@
     });
     $(".navbar-fixed-top").hide();
     $(".container-fluid").css("padding-top", "0px");
+    $("#add-folder-button").click(function(e) {
+      return SvgCanvasBase.addFolder();
+    });
+    $("#delete-item-button").click(function(e) {
+      return SvgCanvasBase.deleteSelectdItem();
+    });
     initPropertyEdit();
-    return _this.cloneControlView.hide();
+    return cloneControlView.hide();
   });
 
   this.excutePathBoolean = function(operate) {
@@ -7290,13 +7815,16 @@
           "transform": ""
         });
         SvgCanvasBase.removeItem(item2);
-        return cloneControlView.initControls([item1]);
+        return cloneControlView.setItems([item1]);
       }
     }
   };
 
+  this.propertyEditSet = {};
+
   this.initPropertyEdit = function() {
-    var attr, propertyEditSet, _fn, _i, _len, _ref;
+    var attr, propertyEditSet, _fn, _i, _len, _ref,
+      _this = this;
     propertyEditSet = new PropertyEditSetView({
       el: $("#property-table")
     });

@@ -5,6 +5,7 @@
     <link href="stylesheets/bootstrap.css" media="all" rel="stylesheet" type="text/css" />
     <link href="stylesheets/spectrum.css" media="all" rel="stylesheet" type="text/css" />
     <link href="stylesheets/application.css" media="all" rel="stylesheet" type="text/css" />
+    <link href="stylesheets/font-awesome.min.css" media="all" rel="stylesheet" type="text/css" />
     <link rel="stylesheet" href="http://code.jquery.com/ui/1.10.0/themes/base/jquery-ui.css" />
 
     <script src="http://code.jquery.com/jquery-1.10.1.min.js"></script>
@@ -37,6 +38,7 @@
         <li class="divider"></li>
         <li><a tabindex="-1" href="#" data-action="group">group</a></li>
         <li><a tabindex="-1" href="#" data-action="ungroup">ungroup</a></li>
+        <li><a tabindex="-1" href="#" data-action="addFolder">addFolder</a></li>
         <li class="divider"></li>
         <li><a tabindex="-1" href="#" data-action="unite">unite</a></li>
         <li><a tabindex="-1" href="#" data-action="intersect">intersect</a></li>
@@ -127,8 +129,8 @@
           </div>
         </div>
       </div>
-      <div class="" style="position:relative;height:100%;">
-        <div class="canvas" style="width:100%;position:absolute;left:100px;top:10px;">
+      <div class="" style="position:absolute;left:0px;top:50px;right:0px;bottom:0px;">
+        <div class="canvas" style="position:absolute;left:100px;top:10px;right:0px;bottom:0px">
           <div class="alpha" style="height:100%;width:100%;">
             <svg id="svg-canvas-base" style="height:100%;width:100%" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns="http://www.w3.org/2000/svg">
               <defs id="gradient-defs">
@@ -179,8 +181,18 @@
               </li>
             </ul>
             <div class="tab-content">
-              <div class="tab-pane active" id="inspector-panel" style="height:300px;overflow-y:scroll">
+              <div class="tab-pane active" id="inspector-panel" style="height:400px;overflow-y:scroll">
                 <div id="inspector-list" style=""></div>
+              </div>
+              <div class="inspector-action">
+                <button id="add-folder-button" type="button"
+                  class="btn btn-default btn-xs">
+                  <span class="glyphicon glyphicon-folder-close"></span> Add Folder
+                </button>
+                <button id="delete-item-button" type="button"
+                  class="btn btn-default btn-xs">
+                  <span class="glyphicon glyphicon-trash"></span> Delete
+                </button>
               </div>
             </div>
           </div>

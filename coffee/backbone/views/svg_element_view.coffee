@@ -6,13 +6,9 @@ class @SvgElementView extends Backbone.View
         "mousedown": "onMouseDown"
         "click": "onClick"
         "dblclick": "onDblClick"
-        # "contextmenu": "onContextmenu"
 
     initialize: () ->
-        @model.on('remove', @remove)
-
-    onContextmenu:(e) =>
-        false
+        @listenTo(@model, 'remove', @remove)
 
     onClick:(e) =>
         @trigger("onClick", @, e)
@@ -26,7 +22,11 @@ class @SvgElementView extends Backbone.View
             @trigger("onMouseDown", @, e)
 
     remove:() =>
-        if @model.isGrouped() #for group item
+
+        if @model.isSuspendRemove()
+            @stopListening()
+            @undelegateEvents()
+        else if @model.isGrouped() #for grouped item
             @stopListening()
             @undelegateEvents()
         else

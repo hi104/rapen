@@ -21,6 +21,12 @@ class @ZOrderControl extends Backbone.View
             b.index() - a.index()
         )
 
+
+    # TODO direct element move
+    #
+    # need sync folder items position
+    #
+
     _bringForward:(elements)=>
         elements = @_sort(elements).reverse()
         for e in elements
