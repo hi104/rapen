@@ -59,3 +59,32 @@ input[type="color"],
     /* display:hidden; */
     visibility:hidden;
 }
+
+.inspector-action {
+    background: #eee;
+    border-top: 1px solid #ccc;
+    border-bottom: 1px solid #ccc;
+    padding: 5px;
+
+}
+
+.inspector-row {
+    padding:5px;
+    padding-right:10px;
+    border-bottom:1px solid #ccc;
+}
+
+.inspector-items{
+    border-left:1px solid #ccc;
+}
+
+.inspector-xs-block{
+    margin:0px 5px;
+    float:left;
+    height:15px;
+    width:15px;
+}
+
+.inspector-row .select-element{
+    margin-top:3px;
+}

@@ -1,0 +1,1 @@
+class @DataPropertyEditView extends PropertyEditView

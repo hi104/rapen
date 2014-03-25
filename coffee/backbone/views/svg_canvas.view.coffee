@@ -9,31 +9,37 @@ class @SvgCanvas extends Backbone.View
         @control      = @options.control
         @zoomValue    = 1.0
         @unique_index = 0
-        @item_list    = new SvgElementList()
-        @item_list.bind('add', @onAddItem)
+        @rootFolder = new SvgFolder()
+        @rootFolder.setElement(@mainCanvas)
+        @rootFolder.setManager(@manager)
+        @item_list    = @rootFolder.items
+        # @item_list.bind('add', @onAddItem)
 
     generateId: () => #better use uuid ?
         # id = @unique_index++
         "item-" + UUID.generate()
 
     getItems:() ->
-        @item_list
+        _.flatten(@_getItems(@rootFolder))
+
+    _getItems:(folder) ->
+        folder.items.map((item) =>
+            if item.constructor ==  SvgFolder
+                @_getItems(item)
+            else
+                item
+        )
 
     removeItem:(item) =>
-        @item_list.remove(item)
-
-    onAddItem:(item) =>
-        view = new SvgElementView({model:item, el:item.el })
-        @setControlViewEvent(view)
-        view.render()
+        item.folder.remove(item)
 
     addItem:(item) =>
         elm = item.el
         unless $(elm).attr("id")
             $(elm).attr("id", @generateId())
         $(elm).attr("class", "svg-control-item")
-        $(@mainCanvas).append(elm)
-        @item_list.add(item)
+        @rootFolder.$el.append(elm)
+        @rootFolder.add(item)
         item
 
     addElement:(elm) =>
@@ -41,12 +47,19 @@ class @SvgCanvas extends Backbone.View
         item.setElement(elm)
         @addItem(item)
 
-    setControlViewEvent:(view) =>
-        ["onMouseDown", "onDblClick", "onClick"].forEach((event) =>
-            view.bind(event, (obj, e) =>
-                @manager.onEvent(event, obj, e)
-            )
-        )
+    addFolder:(targetFolder = @rootFolder) =>
+        folder = new SvgFolder()
+        folder.setManager(@manager)
+        folder.setElement(SVGUtil.createTag("g"))
+        folder.setFolder(targetFolder)
+
+        elm = folder.el
+        unless $(elm).attr("id")
+            $(elm).attr("id", @generateId())
+        $(targetFolder.el).append(elm)
+        targetFolder.add(folder)
+        $(folder.el).attr("class", "svg-folder-item")
+        folder
 
     onMouseWheel: (e)->
 
@@ -98,7 +111,18 @@ class @SvgCanvas extends Backbone.View
         if @control.item_list.length > 0
             clone_origin_list = @control.item_list.map((item) => item.get("origin_model"))
             group =  @group(clone_origin_list)
-            @control.initControls([group])
+            @control.setItems([group])
+
+    addFolderSelectedItem:() =>
+        if @control.item_list.length > 0
+
+            clone_origin_list = @getItems().filter((item) => item.isSelected())
+            console.log(@_getItems(@rootFolder))
+            console.log(clone_origin_list)
+            folder = @addFolder()
+            clone_origin_list.forEach((item) ->
+                InspectorDragAndDrop.moveToElement(item, folder)
+            )
 
     unGroupSelectedItem:() =>
         if @control.isOneItem()
@@ -123,7 +147,7 @@ class @SvgCanvas extends Backbone.View
         items.forEach((item) =>
             item.group()
             $(group_el).append(item.el)
-            @item_list.remove(item)
+            item.removeFromFolder()
         )
         @addElement(group_el)
 

@@ -3,7 +3,7 @@ class @CloneControlView extends Backbone.View
     initialize:() =>
         @manager = @options.manager
         @canvas = @options.canvas
-        @item_list = new SvgElementList()
+        @item_list      = new SvgElementList()
         @line_list_view = new SelectLineListView({
             el: @options.line_wrapper,
             line_view_class: CloneSelectLineView
@@ -27,8 +27,20 @@ class @CloneControlView extends Backbone.View
         @mode = ""
 
     getControl:() => @itemControl
+
     setCanvas:(canvas) =>
         @canvas = canvas
+
+    _onAddItem:(item) =>
+        view = new SvgElementView({model:item, el:item.el})
+        item.set("view", view)
+        @_setChildControlEvent(view)
+        @line_list_view.item_list.add(item)
+        view.render()
+        item.get("origin_model").select()
+
+    _onRemoveItem:(item) =>
+        item.get("origin_model").unSelect()
 
     _onChangeList:() =>
         @itemControl.clear()
@@ -40,11 +52,16 @@ class @CloneControlView extends Backbone.View
             @itemControl.setItem(item)
             @line_list_view.$el.hide()
             @$el.hide()
+            @lazyShow()
         else if @item_list.length > 0
             @listenTo(@item,"change", @update)
             @itemControl.setItem(@item)
             @line_list_view.$el.show()
             @$el.show()
+            @lazyShow()
+        else
+            @clear()
+            @hide()
 
         @trigger("onChangeList", @)
 
@@ -62,17 +79,6 @@ class @CloneControlView extends Backbone.View
             @item_list.at(0).get("origin_model")
         else
             null
-
-    _onAddItem:(item) =>
-        view = new SvgElementView({model:item, el:item.el})
-        item.set("view", view)
-        @_setChildControlEvent(view)
-        @line_list_view.item_list.add(item)
-        view.render()
-        item.get("origin_model").select()
-
-    _onRemoveItem:(item) =>
-        item.get("origin_model").unSelect()
 
     _updateForOneItem:() =>
         item = @firstItem()
@@ -98,14 +104,10 @@ class @CloneControlView extends Backbone.View
         )
         @line_list_view.render()
 
-    initControls:(models) =>
+    setItems:(models) =>
         @clear()
         for model in models
             @addItem(model)
-        # @render()
-
-    exists:(model) =>
-        @item_list.find((e) => e.get("origin_model") == model)
 
     removeItem:(model)=>
         item = @item_list.find((e) => e.get("origin_model") == model)
@@ -124,6 +126,16 @@ class @CloneControlView extends Backbone.View
         @lazyRender()
         item
 
+    clear:() =>
+        @$el.attr("transform", "")
+        @$el.empty()
+        @line_list_view.clear()
+        while @item_list.length > 0
+            @item_list.remove(@item_list.first())
+
+    exists:(model) =>
+        @item_list.find((e) => e.get("origin_model") == model)
+
     hide:() =>
         @$el.hide()
         @itemControl.hide()
@@ -134,14 +146,6 @@ class @CloneControlView extends Backbone.View
         @itemControl.show()
         @line_list_view.$el.show()
 
-    clear:() =>
-        @hide()
-        @$el.attr("transform", "")
-        @$el.empty()
-        @line_list_view.clear()
-        while @item_list.length > 0
-            @item_list.remove(@item_list.first())
-
     render:() =>
         if @mode == "copy"
             @$el.attr("opacity", 0.5)
@@ -151,16 +155,14 @@ class @CloneControlView extends Backbone.View
         @line_list_view.render()
 
     @::lazyRender = _.debounce(@::render, 50)
+    @::lazyShow = _.debounce(@::show, 10)
 
     _setChildControlEvent:(view) =>
         view.bind("onClick", (obj, e) =>
             if e.shiftKey
                 @item_list.remove(obj.model)
-                e.preventDefault()
-                e.stopPropagation()
+                @cancelEvent(e)
                 @render()
-                if @item_list.length  == 0
-                    @clear()
         )
 
     _setControlViewEvent:(view) =>
@@ -184,6 +186,30 @@ class @CloneControlView extends Backbone.View
                 @cancelEvent(e)
                 @itemControl.position_control.onMouseDown(e)
 
+    attachDragEvent:(sender, e) =>
+        $(document).mousemove(sender.onDragging)
+        ondrop = (e) =>
+            sender.onDrop(e) if sender.onDrop
+            $(document).unbind('mousemove', sender.onDragging)
+            $(document).unbind('mouseup', ondrop)
+            @cancelEvent(e)
+        $(document).mouseup(ondrop)
+
+    attachCopyDragEvent:(sender, e) =>
+        @mode = "copy"
+        @$el.show()
+        @$el.attr("opacity", 0.5) #for copy object visible
+        $(document).mousemove(sender.onDragging)
+        ondrop = (e) =>
+            @mode = ""
+            sender.onDrop(e) if sender.onDrop
+            $(document).unbind('mousemove', sender.onDragging)
+            $(document).unbind('mouseup', ondrop)
+            @$el.attr("opacity", 0)
+            @setItems(@_createCopyItems())
+            @cancelEvent(e)
+        $(document).mouseup(ondrop)
+
     _copyMode:(sender, e) =>
 
         @line_list_view.$el.show()
@@ -198,31 +224,13 @@ class @CloneControlView extends Backbone.View
         @cancelEvent(e)
         @attachCopyDragEvent(sender, e)
 
-    cancelEvent:(e)->
-        e.preventDefault()
-        e.stopPropagation()
-
-    attachCopyDragEvent:(sender, e) =>
-        @mode = "copy"
-        @$el.show()
-        @$el.attr("opacity", 0.5) #for copy object visible
-        $(document).mousemove(sender.onDragging)
-        ondrop = (e) =>
-            @mode = ""
-            sender.onDrop(e) if sender.onDrop
-            $(document).unbind('mousemove', sender.onDragging)
-            $(document).unbind('mouseup', ondrop)
-            @$el.attr("opacity", 0)
-            @initControls(@_createCopyItems())
-            @cancelEvent(e)
-        $(document).mouseup(ondrop)
-
     _createCopyItems:() =>
         matrix = @item.getLocalMatrix()
         copy_items = []
         orderd_list = @item_list.sortBy((item) =>
             el = item.get("origin_model").el
-            $(el).index())
+            $(el).index()
+        )
 
         _(orderd_list).each((item) =>
             local = item.getLocalMatrix()
@@ -231,11 +239,6 @@ class @CloneControlView extends Backbone.View
         )
         copy_items
 
-    attachDragEvent:(sender, e) =>
-        $(document).mousemove(sender.onDragging)
-        ondrop = (e) =>
-            sender.onDrop(e) if sender.onDrop
-            $(document).unbind('mousemove', sender.onDragging)
-            $(document).unbind('mouseup', ondrop)
-            @cancelEvent(e)
-        $(document).mouseup(ondrop)
+    cancelEvent:(e)->
+        e.preventDefault()
+        e.stopPropagation()

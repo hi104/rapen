@@ -14,6 +14,7 @@ class @ContextMenuView extends Backbone.View
 
         "group"     : () -> SvgCanvasBase.groupSelectedItem(),
         "ungroup"   : () -> SvgCanvasBase.unGroupSelectedItem(),
+        "addFolder" : () -> SvgCanvasBase.addFolderSelectedItem(),
 
         "unite"     : () -> excutePathBoolean("unite"),
         "intersect" : () -> excutePathBoolean("intersect"),

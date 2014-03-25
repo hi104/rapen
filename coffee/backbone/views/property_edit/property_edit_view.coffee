@@ -21,7 +21,6 @@ class @PropertyEditView extends Backbone.View
     onKeydown:(e) =>
         setTimeout(() =>
             v = @input.val()
-            console.log v
             @update v,
         10)
 
@@ -46,7 +45,8 @@ class @PropertyEditView extends Backbone.View
     render:() =>
         value = if @model then @model.get(@attrName) else ""
         @input = @$('.edit')
-        @input.val(value)
+        if @input.val() != value
+            @input.val(value)
         @
 
     clear:() =>

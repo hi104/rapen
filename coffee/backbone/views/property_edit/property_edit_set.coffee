@@ -4,6 +4,7 @@ class @PropertyEditSetView extends Backbone.View
         @model = new PropertyEdit()
         @attrs = [
          "id",
+         "data-name",
          "class",
          "x",
          "y",
@@ -43,12 +44,15 @@ class @PropertyEditSetView extends Backbone.View
         @_init_view()
 
     _init_view:() =>
+        data_attr_re = /^data-/
+        type = "text"
         for attr in @attrs
-            type = "text"
-            prop_view = new PropertyEditView({
-                inputType:type,
-                attrName:attr,
-                model:@model
+            klass = if attr.match(data_attr_re) then PropertyEditView else DataPropertyEditView
+
+            prop_view = new klass({
+                inputType: type,
+                attrName: attr,
+                model: @model
             })
             @prop_views[attr] = prop_view
             @$el.append(prop_view.el)
