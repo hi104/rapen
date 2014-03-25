@@ -4577,6 +4577,7 @@
 
     CloneSelectLineView.prototype._setProperty = function() {
       return $(this.el).attr({
+        "pointer-events": "none",
         "fill": "blue",
         "fill-opacity": "0.5",
         "stroke": "gray",

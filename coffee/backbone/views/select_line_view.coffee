@@ -25,6 +25,7 @@ class @SelectLineView extends Backbone.View
 class @CloneSelectLineView extends SelectLineView
     _setProperty:()=>
         $(@el).attr({
+            "pointer-events"    : "none",
             "fill"              : "blue",
             "fill-opacity"      : "0.5",
             "stroke"            : "gray",
