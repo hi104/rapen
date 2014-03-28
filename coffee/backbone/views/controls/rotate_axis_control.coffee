@@ -32,7 +32,7 @@ class @RotateAxisControl extends Backbone.View
         @_origin_degree = @_radianToDegree(@_radian(center, @_origin_rotate_point))
 
     onDragging:(e)=>
-        mouse_point =SVGUtil.createPoint(e.pageX, e.pageY)
+        mouse_point = SVGUtil.createPoint(e.pageX, e.pageY)
         degree = @_radianToDegree(@_radian(mouse_point, @_origin_rotate_point))
         rot_degree = degree
 
@@ -52,6 +52,9 @@ class @RotateAxisControl extends Backbone.View
         transform = d3.transform("matrix(" + SVGUtil.toStringMatrix(@_origin_matrix.translate(point.x, point.y))+ " )")
         transform.rotate = transform.rotate+angle-@_origin_degree
         matrix = SVGUtil.TransformMatrix(transform.toString()).translate(-point.x, -point.y)
+        # matrix = @_origin_matrix.translate(point.x, point.y)
+        #          .rotate(angle-@_origin_degree)
+        #          .translate(-point.x, -point.y)
         @getItem().setMatrix(matrix)
 
     _radian: (p, origin) ->
@@ -65,15 +68,19 @@ class @RotateAxisControl extends Backbone.View
         @render_rotate_point()
 
     render_control_point:() =>
-        rotate_point = @getRotateAxisPoint().matrixTransform(SvgCanvasBase.mainCanvas.getScreenCTM())
+
+        canvas = SvgCanvasBase.mainCanvas
+        screen_rotate_point = @getRotateAxisPoint().matrixTransform(canvas.getScreenCTM())
         center = @getItem().getCentorPoint()
-        r = Math.atan2(center.y - rotate_point.y, center.x - rotate_point.x)
-        y = Math.sin(r) * 100
+        r = Math.atan2(center.y - screen_rotate_point.y,
+                       center.x - screen_rotate_point.x)
+
         x = Math.cos(r) * 100
-        element = $(@el)
-        rotate_point = @getRotateAxisPoint().matrixTransform(SvgCanvasBase.mainCanvas.getCTM())
-        element.attr("cx", rotate_point.x  +  x)
-        element.attr("cy", rotate_point.y  +  y)
+        y = Math.sin(r) * 100
+
+        rotate_point = @getRotateAxisPoint().matrixTransform(canvas.getCTM())
+        @$el.attr("cx", rotate_point.x  +  x)
+        @$el.attr("cy", rotate_point.y  +  y)
 
     render_rotate_point:() =>
         @rotate_point_view.render()
