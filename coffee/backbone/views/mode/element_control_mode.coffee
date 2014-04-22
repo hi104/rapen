@@ -47,6 +47,8 @@ class @ElementControlMode
             if e.shiftKey
                 if not control.exists(sender.model)
                     control.addItem(sender.model)
+                else
+                    control.removeItem(sender.model)
             else
                 if not control.exists(sender.model)
                     control.clear()

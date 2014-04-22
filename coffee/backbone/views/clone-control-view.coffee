@@ -34,7 +34,6 @@ class @CloneControlView extends Backbone.View
     _onAddItem:(item) =>
         view = new SvgElementView({model:item, el:item.el})
         item.set("view", view)
-        @_setChildControlEvent(view)
         @line_list_view.item_list.add(item)
         view.render()
         item.get("origin_model").select()
@@ -89,6 +88,7 @@ class @CloneControlView extends Backbone.View
         view = item.get("view")
         el = view.$el
         elm = item.get("origin_model").el.cloneNode(true)
+        $(elm).attr({"pointer-events" : "none"})
         item.el = elm
         @$el.append(elm)
         view.setElement(elm)
@@ -116,6 +116,7 @@ class @CloneControlView extends Backbone.View
 
     addItem:(model)=>
         elm = model.el.cloneNode(true)
+        $(elm).attr({"pointer-events" : "none"})
         matrix = @item.getLocalMatrix().inverse().multiply(model.getLocalMatrix())
         SVGUtil.setMatrixTransform(elm, matrix)
         @$el.append(elm)
@@ -156,14 +157,6 @@ class @CloneControlView extends Backbone.View
 
     @::lazyRender = _.debounce(@::render, 50)
     @::lazyShow = _.debounce(@::show, 10)
-
-    _setChildControlEvent:(view) =>
-        view.bind("onClick", (obj, e) =>
-            if e.shiftKey
-                @item_list.remove(obj.model)
-                @cancelEvent(e)
-                @render()
-        )
 
     _setControlViewEvent:(view) =>
         view.bind("onMouseDown", (obj, e) =>
@@ -235,7 +228,9 @@ class @CloneControlView extends Backbone.View
         _(orderd_list).each((item) =>
             local = item.getLocalMatrix()
             item.setMatrix(matrix.multiply(local))
-            copy_items.push(@canvas.addElement(item.el.cloneNode(true)))
+            el = item.el.cloneNode(true)
+            $(el).removeAttr("pointer-events")
+            copy_items.push(@canvas.addElement(el))
         )
         copy_items
 

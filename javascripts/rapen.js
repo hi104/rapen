@@ -684,7 +684,6 @@
       this.attachDragEvent = __bind(this.attachDragEvent, this);
       this.onEvent = __bind(this.onEvent, this);
       this._setControlViewEvent = __bind(this._setControlViewEvent, this);
-      this._setChildControlEvent = __bind(this._setChildControlEvent, this);
       this.render = __bind(this.render, this);
       this.show = __bind(this.show, this);
       this.hide = __bind(this.hide, this);
@@ -753,7 +752,6 @@
         el: item.el
       });
       item.set("view", view);
-      this._setChildControlEvent(view);
       this.line_list_view.item_list.add(item);
       view.render();
       return item.get("origin_model").select();
@@ -821,6 +819,9 @@
       view = item.get("view");
       el = view.$el;
       elm = item.get("origin_model").el.cloneNode(true);
+      $(elm).attr({
+        "pointer-events": "none"
+      });
       item.el = elm;
       this.$el.append(elm);
       view.setElement(elm);
@@ -867,6 +868,9 @@
     CloneControlView.prototype.addItem = function(model) {
       var elm, item, matrix;
       elm = model.el.cloneNode(true);
+      $(elm).attr({
+        "pointer-events": "none"
+      });
       matrix = this.item.getLocalMatrix().inverse().multiply(model.getLocalMatrix());
       SVGUtil.setMatrixTransform(elm, matrix);
       this.$el.append(elm);
@@ -922,17 +926,6 @@
     CloneControlView.prototype.lazyRender = _.debounce(CloneControlView.prototype.render, 50);
 
     CloneControlView.prototype.lazyShow = _.debounce(CloneControlView.prototype.show, 10);
-
-    CloneControlView.prototype._setChildControlEvent = function(view) {
-      var _this = this;
-      return view.bind("onClick", function(obj, e) {
-        if (e.shiftKey) {
-          _this.item_list.remove(obj.model);
-          _this.cancelEvent(e);
-          return _this.render();
-        }
-      });
-    };
 
     CloneControlView.prototype._setControlViewEvent = function(view) {
       var _this = this;
@@ -1019,10 +1012,12 @@
         return $(el).index();
       });
       _(orderd_list).each(function(item) {
-        var local;
+        var el, local;
         local = item.getLocalMatrix();
         item.setMatrix(matrix.multiply(local));
-        return copy_items.push(_this.canvas.addElement(item.el.cloneNode(true)));
+        el = item.el.cloneNode(true);
+        $(el).removeAttr("pointer-events");
+        return copy_items.push(_this.canvas.addElement(el));
       });
       return copy_items;
     };
@@ -1504,16 +1499,16 @@
     };
 
     RotateAxisControl.prototype.render_control_point = function() {
-      var center, element, r, rotate_point, x, y;
-      rotate_point = this.getRotateAxisPoint().matrixTransform(SvgCanvasBase.mainCanvas.getScreenCTM());
+      var canvas, center, r, rotate_point, screen_rotate_point, x, y;
+      canvas = SvgCanvasBase.mainCanvas;
+      screen_rotate_point = this.getRotateAxisPoint().matrixTransform(canvas.getScreenCTM());
       center = this.getItem().getCentorPoint();
-      r = Math.atan2(center.y - rotate_point.y, center.x - rotate_point.x);
-      y = Math.sin(r) * 100;
+      r = Math.atan2(center.y - screen_rotate_point.y, center.x - screen_rotate_point.x);
       x = Math.cos(r) * 100;
-      element = $(this.el);
-      rotate_point = this.getRotateAxisPoint().matrixTransform(SvgCanvasBase.mainCanvas.getCTM());
-      element.attr("cx", rotate_point.x + x);
-      return element.attr("cy", rotate_point.y + y);
+      y = Math.sin(r) * 100;
+      rotate_point = this.getRotateAxisPoint().matrixTransform(canvas.getCTM());
+      this.$el.attr("cx", rotate_point.x + x);
+      return this.$el.attr("cy", rotate_point.y + y);
     };
 
     RotateAxisControl.prototype.render_rotate_point = function() {
@@ -2501,6 +2496,8 @@
         if (e.shiftKey) {
           if (!control.exists(sender.model)) {
             return control.addItem(sender.model);
+          } else {
+            return control.removeItem(sender.model);
           }
         } else {
           if (!control.exists(sender.model)) {
