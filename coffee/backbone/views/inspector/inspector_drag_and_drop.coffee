@@ -25,11 +25,13 @@ class @InspectorDragAndDrop
         $(document).mouseup(@onMouseUp)
 
     onMouseLeave:(e, view) ->
-        view.setDefalutStyle()
+        if view != @select_view
+            view.setDefalutStyle()
 
     onMouseOver:(e, view) ->
         @over_view = view
-        view.setOverStyle()
+        if view != @select_view
+            view.setOverStyle()
 
     onMouseUp:(e) =>
         InspectorDragAndDrop.moveToElement(@select_view.model, @over_view?.model)

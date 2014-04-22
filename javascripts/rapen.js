@@ -3020,7 +3020,7 @@
       this.control = this.options.control;
       this.listenTo(this.item_list, "add", this.addItem);
       this.listenTo(this.item_list, "remove", this.removeItem);
-      return this.inspector_views = [];
+      return this._inspector_views = [];
     };
 
     InspectorListView.prototype.addItem = function(item) {
@@ -3035,7 +3035,7 @@
         model: item,
         control: this.control
       });
-      this.inspector_views.push(view);
+      this._inspector_views.push(view);
       this.$el.prepend(view.el);
       return this.sortElementByIndex();
     };
@@ -3043,18 +3043,18 @@
     InspectorListView.prototype.removeItem = function(item) {
       var index, view,
         _this = this;
-      view = _(this.inspector_views).find(function(e) {
+      view = _(this._inspector_views).find(function(e) {
         return e.model === item;
       });
-      index = this.inspector_views.indexOf(view);
-      this.inspector_views.splice(index, 1);
+      index = this._inspector_views.indexOf(view);
+      this._inspector_views.splice(index, 1);
       return this.sortElementByIndex();
     };
 
     InspectorListView.prototype.sortElementByIndex = function() {
       var sorted_views,
         _this = this;
-      sorted_views = _(this.inspector_views).sortBy(function(e) {
+      sorted_views = _(this._inspector_views).sortBy(function(e) {
         return $(e.model.el).index();
       });
       return sorted_views.forEach(function(e) {
@@ -3063,7 +3063,7 @@
     };
 
     InspectorListView.prototype.remove = function() {
-      this.inspector_views.forEach(function(view) {
+      this._inspector_views.forEach(function(view) {
         return view.remove();
       });
       return InspectorListView.__super__.remove.call(this);
@@ -3197,18 +3197,18 @@
       this.$el.html(this.template());
       container = this.$el.find("div");
       container.find(".open-element").hide();
-      this.select_el = container.children(".select-element");
-      this.lock_el = container.find(".lock-element");
-      return this.visible_el = container.find(".visible-element");
+      this._select_el = container.children(".select-element");
+      this._lock_el = container.find(".lock-element");
+      return this._visible_el = container.find(".visible-element");
     };
 
     InspectorView.prototype._render = function() {
       var color;
       color = this.model.isSelected() ? "skyblue" : "white";
-      this.select_el.css("background-color", color);
+      this._select_el.css("background-color", color);
       this.$el.find("div").find(".name").val(this.model.get("data-name"));
-      this.toggleClass(this.lock_el, "fa-lock", "fa-unlock-alt", this.model.isLocked());
-      return this.toggleClass(this.visible_el, "fa-eye", "fa-eye-slash", this.model.isVisibled());
+      this.toggleClass(this._lock_el, "fa-lock", "fa-unlock-alt", this.model.isLocked());
+      return this.toggleClass(this._visible_el, "fa-eye", "fa-eye-slash", this.model.isVisibled());
     };
 
     InspectorView.prototype.rowElement = function() {
@@ -3324,16 +3324,16 @@
       list_view.$el.css("margin-left", "5px");
       this.list_view = list_view;
       container = this.$el.children(".inspetor-folder");
-      this.select_el = container.children(".select-element");
-      this.open_el = container.find(".open-element");
-      return this.visible_el = container.find(".visible-element");
+      this._select_el = container.children(".select-element");
+      this._open_el = container.find(".open-element");
+      return this._visible_el = container.find(".visible-element");
     };
 
     InspectorFolderView.prototype._render = function() {
       var color, container, items_el;
       color = this.model.isSelected() ? "skyblue" : "white";
       container = this.$el.children(".inspetor-folder");
-      this.select_el.css("background-color", color);
+      this._select_el.css("background-color", color);
       container.find(".name").val(this.model.get("data-name"));
       items_el = this.$el.find("ul").first();
       if (this.model.isOpen()) {
@@ -3341,8 +3341,8 @@
       } else {
         items_el.hide();
       }
-      this.toggleClass(this.open_el, "fa-caret-square-o-down", "fa-caret-square-o-right", this.model.isOpen());
-      return this.toggleClass(this.visible_el, "fa-eye", "fa-eye-slash", this.model.isVisibled());
+      this.toggleClass(this._open_el, "fa-caret-square-o-down", "fa-caret-square-o-right", this.model.isOpen());
+      return this.toggleClass(this._visible_el, "fa-eye", "fa-eye-slash", this.model.isVisibled());
     };
 
     InspectorFolderView.prototype.render = function() {
@@ -3406,12 +3406,16 @@
     };
 
     InspectorDragAndDrop.prototype.onMouseLeave = function(e, view) {
-      return view.setDefalutStyle();
+      if (view !== this.select_view) {
+        return view.setDefalutStyle();
+      }
     };
 
     InspectorDragAndDrop.prototype.onMouseOver = function(e, view) {
       this.over_view = view;
-      return view.setOverStyle();
+      if (view !== this.select_view) {
+        return view.setOverStyle();
+      }
     };
 
     InspectorDragAndDrop.prototype.onMouseUp = function(e) {
