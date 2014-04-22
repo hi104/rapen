@@ -86,17 +86,17 @@ class @InspectorView extends Backbone.View
 
         container = @$el.find("div")
         container.find(".open-element").hide()
-        @select_el  = container.children(".select-element")
-        @lock_el    = container.find(".lock-element")
-        @visible_el = container.find(".visible-element")
+        @_select_el  = container.children(".select-element")
+        @_lock_el    = container.find(".lock-element")
+        @_visible_el = container.find(".visible-element")
 
     _render:() ->
         color   = if @model.isSelected() then "skyblue" else "white"
-        @select_el.css("background-color", color)
+        @_select_el.css("background-color", color)
 
         @$el.find("div").find(".name").val(@model.get("data-name"))
-        @toggleClass(@lock_el, "fa-lock", "fa-unlock-alt", @model.isLocked())
-        @toggleClass(@visible_el, "fa-eye", "fa-eye-slash", @model.isVisibled())
+        @toggleClass(@_lock_el, "fa-lock", "fa-unlock-alt", @model.isLocked())
+        @toggleClass(@_visible_el, "fa-eye", "fa-eye-slash", @model.isVisibled())
 
     rowElement:() ->
         @$el.children("div").first()

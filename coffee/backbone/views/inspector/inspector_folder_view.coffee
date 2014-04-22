@@ -48,24 +48,22 @@ class @InspectorFolderView extends InspectorView
         @list_view  = list_view
 
         container   = @$el.children(".inspetor-folder")
-        @select_el  = container.children(".select-element")
-        @open_el    = container.find(".open-element")
-        @visible_el = container.find(".visible-element")
+        @_select_el  = container.children(".select-element")
+        @_open_el    = container.find(".open-element")
+        @_visible_el = container.find(".visible-element")
 
     _render:() ->
         color   = if @model.isSelected() then "skyblue" else "white"
         container = @$el.children(".inspetor-folder")
 
-        @select_el.css("background-color", color)
-
-        # container.find(".name").html(@model.get("data-name"))
+        @_select_el.css("background-color", color)
         container.find(".name").val(@model.get("data-name"))
 
         items_el = @$el.find("ul").first()
         if @model.isOpen() then items_el.show() else items_el.hide()
 
-        @toggleClass(@open_el, "fa-caret-square-o-down", "fa-caret-square-o-right", @model.isOpen())
-        @toggleClass(@visible_el, "fa-eye", "fa-eye-slash", @model.isVisibled())
+        @toggleClass(@_open_el, "fa-caret-square-o-down", "fa-caret-square-o-right", @model.isOpen())
+        @toggleClass(@_visible_el, "fa-eye", "fa-eye-slash", @model.isVisibled())
 
     render:() =>
         @_initElement() if @$el.children("div").length == 0
