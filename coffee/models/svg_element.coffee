@@ -23,6 +23,8 @@ class @SvgElement extends Backbone.Model
         @attr("data-name", @$el.data("name"))
 
     setMatrix:(matrix) =>
+        # transform = SVGUtil.toD3Transform(matrix)
+        # @attr("transform", transform)
         SVGUtil.setMatrixTransform(@el, matrix)
         @set({"matrix": matrix})
 
