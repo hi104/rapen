@@ -87,6 +87,7 @@
       this.select = __bind(this.select, this);
       this.attr = __bind(this.attr, this);
       this.setMatrix = __bind(this.setMatrix, this);
+      this.generateId = __bind(this.generateId, this);
       this.setElement = __bind(this.setElement, this);
       this.initialize = __bind(this.initialize, this);
       _ref = SvgElement.__super__.constructor.apply(this, arguments);
@@ -120,11 +121,33 @@
       return this.attr("data-name", this.$el.data("name"));
     };
 
-    SvgElement.prototype.setMatrix = function(matrix) {
-      SVGUtil.setMatrixTransform(this.el, matrix);
-      return this.set({
-        "matrix": matrix
+    SvgElement.prototype.getElementId = function() {
+      return this.$el.attr('id');
+    };
+
+    SvgElement.prototype.clone = function() {
+      var newElement;
+      newElement = new SvgElement();
+      newElement.setElement(this.el.cloneNode(true));
+      this._updateElementId(newElement.el);
+      return newElement;
+    };
+
+    SvgElement.prototype._updateElementId = function(element) {
+      $(element).attr('id', this.generateId());
+      return $(element).find('*').each(function(i, e) {
+        return $(el).attr('id', this.generateId());
       });
+    };
+
+    SvgElement.prototype.generateId = function() {
+      return SvgCanvasBase.generateId();
+    };
+
+    SvgElement.prototype.setMatrix = function(matrix) {
+      var transform;
+      transform = SVGUtil.toD3Transform(matrix);
+      return this.attr("transform", transform.toString());
     };
 
     SvgElement.prototype.attr = function(key, val, options) {
@@ -137,6 +160,10 @@
       }
       $(this.el).attr(attrs);
       return this.set(attrs);
+    };
+
+    SvgElement.prototype.getAttr = function(key) {
+      return $(this.el).attr(key);
     };
 
     SvgElement.prototype.select = function() {
@@ -960,11 +987,28 @@
         if (sender.onDrop) {
           sender.onDrop(e);
         }
+        console.log('onDrop', sender.constructor.name);
+        _this._executeCommand(sender, e);
         $(document).unbind('mousemove', sender.onDragging);
         $(document).unbind('mouseup', ondrop);
         return _this.cancelEvent(e);
       };
       return $(document).mouseup(ondrop);
+    };
+
+    CloneControlView.prototype._executeCommand = function(control, e) {
+      var attr, com, creator, service;
+      creator = GLOBAL.commandService.getCreator();
+      service = GLOBAL.commandService;
+      if ((control instanceof PositionControl) || (control instanceof ScaleControl) || (control instanceof RotateControl)) {
+        console.log('_executeCommand', control);
+        attr = control.getChangedAttrs();
+        console.log(attr);
+        console.log(attr.current);
+        console.log(attr.pre);
+        com = creator.createUpdateAttrCommand(control.getItem(), attr.current, attr.pre);
+        return service.executeCommand(com);
+      }
     };
 
     CloneControlView.prototype.attachCopyDragEvent = function(sender, e) {
@@ -1012,12 +1056,12 @@
         return $(el).index();
       });
       _(orderd_list).each(function(item) {
-        var el, local;
+        var clone, local;
+        clone = item.clone();
         local = item.getLocalMatrix();
-        item.setMatrix(matrix.multiply(local));
-        el = item.el.cloneNode(true);
-        $(el).removeAttr("pointer-events");
-        return copy_items.push(_this.canvas.addElement(el));
+        clone.setMatrix(matrix.multiply(local));
+        $(clone.el).removeAttr("pointer-events");
+        return copy_items.push(_this.canvas.addItem(clone));
       });
       return copy_items;
     };
@@ -1264,6 +1308,38 @@
 }).call(this);
 
 (function() {
+  this.StoreAttrsMixin = {
+    storeAttrs: function(keys) {
+      return this._store_attrs = this._getItemAttrs(this.getItem(), keys);
+    },
+    _getItemAttrs: function(item, keys) {
+      var attrs, key, _i, _len;
+      attrs = {};
+      for (_i = 0, _len = keys.length; _i < _len; _i++) {
+        key = keys[_i];
+        attrs[key] = item.getAttr(key);
+      }
+      return attrs;
+    },
+    getStoreAttrs: function() {
+      return this._store_attrs;
+    },
+    getChangedAttrs: function(item) {
+      var attrs;
+      if (item == null) {
+        item = this.getItem();
+      }
+      attrs = this.getStoreAttrs();
+      return {
+        pre: attrs,
+        current: this._getItemAttrs(item, _.keys(attrs))
+      };
+    }
+  };
+
+}).call(this);
+
+(function() {
   var _ref,
     __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; },
     __hasProp = {}.hasOwnProperty,
@@ -1280,6 +1356,7 @@
       this._getItemCoordPos = __bind(this._getItemCoordPos, this);
       this.onDrop = __bind(this.onDrop, this);
       this._snappingItem = __bind(this._snappingItem, this);
+      this._getSnapedPoint = __bind(this._getSnapedPoint, this);
       this._snapPoints = __bind(this._snapPoints, this);
       this._getMovedControlPosition = __bind(this._getMovedControlPosition, this);
       this.onDragging = __bind(this.onDragging, this);
@@ -1302,7 +1379,8 @@
       this.trigger("onMouseDown", this, e);
       this.pre_position = e;
       this.pre_matrix = this.getItem().getLocalMatrix();
-      return this.pre_ctm = this.getItem().getCTM();
+      this.pre_ctm = this.getItem().getCTM();
+      return this.storeAttrs(['transform']);
     };
 
     PositionControl.prototype.onDragging = function(e) {
@@ -1311,7 +1389,7 @@
       if (e.altKey) {
         snap_line_view.clear();
         snap_line_view.render();
-        this.movePosition(pos);
+        this.movePosition(this._getMoveMatrix(pos));
       } else {
         this._snappingItem(e);
       }
@@ -1339,13 +1417,17 @@
       return points;
     };
 
-    PositionControl.prototype._snappingItem = function(e) {
+    PositionControl.prototype._getSnapedPoint = function(e) {
       var movep, pos;
       pos = this._getMovedControlPosition(e);
       movep = Snapping.getSnap(this._snapPoints(pos));
       pos.x = pos.x - movep.x;
       pos.y = pos.y - movep.y;
-      return this.movePosition(pos);
+      return pos;
+    };
+
+    PositionControl.prototype._snappingItem = function(e) {
+      return this.movePosition(this.getMoveMatrix(e));
     };
 
     PositionControl.prototype.onDrop = function(e) {
@@ -1374,8 +1456,16 @@
       return this.pre_matrix.translate(move.x, move.y);
     };
 
-    PositionControl.prototype.movePosition = function(pos) {
-      return this.getItem().setMatrix(this._getMoveMatrix(pos));
+    PositionControl.prototype.getMoveMatrix = function(e) {
+      return this._getMoveMatrix(this._getSnapedPoint(e));
+    };
+
+    PositionControl.prototype.getMoveTransform = function(e) {
+      return SVGUtil.toD3Transform(this.getMoveTransform(e)).toString();
+    };
+
+    PositionControl.prototype.movePosition = function(matrix) {
+      return this.getItem().attr('transform', SVGUtil.toD3Transform(matrix).toString());
     };
 
     PositionControl.prototype._getMovedPosition = function(e) {
@@ -1391,6 +1481,8 @@
     return PositionControl;
 
   })(Backbone.View);
+
+  _.extend(this.PositionControl.prototype, StoreAttrsMixin);
 
 }).call(this);
 
@@ -1567,7 +1659,8 @@
     RotateControl.prototype.onMouseDown = function(e) {
       this.trigger("onMouseDown", this, e);
       this._origin_matrix = this.getItem().getLocalMatrix();
-      return this._origin_rotate_point = this.getItem().getCentorPoint();
+      this._origin_rotate_point = this.getItem().getCentorPoint();
+      return this.storeAttrs(['transform']);
     };
 
     RotateControl.prototype.onDragging = function(e) {
@@ -1667,6 +1760,8 @@
     return RotateControl;
 
   })(Backbone.View);
+
+  _.extend(this.RotateControl.prototype, StoreAttrsMixin);
 
 }).call(this);
 
@@ -1770,7 +1865,7 @@
       this.onDragging = __bind(this.onDragging, this);
       this._getScaleMatrix = __bind(this._getScaleMatrix, this);
       this.onMouseDown = __bind(this.onMouseDown, this);
-      this.saveValue = __bind(this.saveValue, this);
+      this._saveOriginValue = __bind(this._saveOriginValue, this);
       this.controlPosition = __bind(this.controlPosition, this);
       this.fixedPosition = __bind(this.fixedPosition, this);
       this.yAxis = __bind(this.yAxis, this);
@@ -1844,7 +1939,7 @@
       return this.getItem().getPosition(this.pos);
     };
 
-    ScaleControl.prototype.saveValue = function() {
+    ScaleControl.prototype._saveOriginValue = function() {
       var item;
       this._pre_vec_x = this._getVecPoint(this.controlPosition(), this.xAxis());
       this._pre_vec_y = this._getVecPoint(this.controlPosition(), this.yAxis());
@@ -1855,18 +1950,19 @@
       this._pre_vec = this._getVecPoint(this.fixedPosition(), this.controlPosition());
       this.origin_ctm = item.getLocalMatrix();
       this.origin_bbox = item.getBBox();
-      return this.origin_attribute = {
+      this.origin_attribute = {
         width: $(item.el).attr("width"),
         height: $(item.el).attr("height"),
         r: $(item.el).attr("r"),
         rx: $(item.el).attr("rx"),
         ry: $(item.el).attr("ry")
       };
+      return this.storeAttrs(['width', 'height', 'r', 'rx', 'ry', 'transform']);
     };
 
     ScaleControl.prototype.onMouseDown = function(e) {
       this.trigger("onMouseDown", this, e);
-      return this.saveValue();
+      return this._saveOriginValue();
     };
 
     ScaleControl.prototype._getVecPoint = function(p1, p2) {
@@ -1884,7 +1980,7 @@
     };
 
     ScaleControl.prototype.onDragging = function(e) {
-      var control_vec, m, scale, snap_point, x_scale, y_scale;
+      var control_vec, m, matrix, scale, snap_point, x_scale, y_scale;
       snap_point = this.getSnapPoint(e);
       control_vec = this._getVecPoint(this.pre_fixed_point, snap_point);
       m = this._getScaleMatrix();
@@ -1899,10 +1995,11 @@
         }
       }
       if (e.altKey) {
-        return this.setCenterScale((x_scale * 2) - 1, (y_scale * 2) - 1);
+        matrix = this.setCenterScale((x_scale * 2) - 1, (y_scale * 2) - 1);
       } else {
-        return this.setScale(x_scale, y_scale);
+        matrix = this.setScale(x_scale, y_scale);
       }
+      return this.getItem().setMatrix(matrix);
     };
 
     ScaleControl.prototype.getSnapPoint = function(e) {
@@ -1914,7 +2011,7 @@
     };
 
     ScaleControl.prototype.setScale = function(x_scale, y_scale) {
-      var box_height, box_width, item, matrix, move_bbox_height, move_bbox_width, move_bbox_x, move_bbox_y, move_height, move_width, move_x, move_y, set_rx, set_ry, x_value, y_value;
+      var item, matrix, move_bbox_height, move_bbox_width, move_bbox_x, move_bbox_y, move_height, move_width, move_x, move_y, set_rx, set_ry, x_value, y_value;
       item = this.getItem();
       if (item.el.tagName === "rect") {
         x_value = Math.abs(this.origin_attribute.width * x_scale);
@@ -1973,12 +2070,10 @@
         }
         matrix = this.origin_ctm.translate(-set_rx, -set_ry);
       } else {
-        box_width = this.origin_bbox.width;
-        box_height = this.origin_bbox.height;
-        move_bbox_x = (this.origin_bbox.x * x_scale) - this.origin_bbox.x;
-        move_bbox_y = (this.origin_bbox.y * y_scale) - this.origin_bbox.y;
-        move_bbox_width = (box_width * x_scale) - box_width;
-        move_bbox_height = (box_height * y_scale) - box_height;
+        move_bbox_x = this.origin_bbox.x * (x_scale - 1);
+        move_bbox_y = this.origin_bbox.y * (y_scale - 1);
+        move_bbox_width = this.origin_bbox.width * (x_scale - 1);
+        move_bbox_height = this.origin_bbox.height * (y_scale - 1);
         if (this.pos.x !== -1) {
           move_x = move_bbox_x;
         } else {
@@ -1992,11 +2087,11 @@
         matrix = this.origin_ctm.translate(-move_x, -move_y);
         matrix = matrix.scaleNonUniform(x_scale, y_scale);
       }
-      return item.setMatrix(matrix);
+      return matrix;
     };
 
     ScaleControl.prototype.setCenterScale = function(x_scale, y_scale) {
-      var box_height, box_width, item, matrix, move_bbox_height, move_bbox_width, move_bbox_x, move_bbox_y, move_height, move_width, move_x, move_y, set_rx, set_ry, x_value, y_value;
+      var item, matrix, move_bbox_height, move_bbox_width, move_bbox_x, move_bbox_y, move_height, move_width, move_x, move_y, set_rx, set_ry, x_value, y_value;
       item = this.getItem();
       if (item.el.tagName === "rect") {
         x_value = Math.abs(this.origin_attribute.width * x_scale);
@@ -2028,18 +2123,16 @@
         });
         matrix = this.origin_ctm;
       } else {
-        box_width = this.origin_bbox.width;
-        box_height = this.origin_bbox.height;
-        move_bbox_x = (this.origin_bbox.x * x_scale) - this.origin_bbox.x;
-        move_bbox_y = (this.origin_bbox.y * y_scale) - this.origin_bbox.y;
-        move_bbox_width = (box_width * x_scale) - box_width;
-        move_bbox_height = (box_height * y_scale) - box_height;
+        move_bbox_x = this.origin_bbox.x * (x_scale - 1);
+        move_bbox_y = this.origin_bbox.y * (y_scale - 1);
+        move_bbox_width = this.origin_bbox.width * (x_scale - 1);
+        move_bbox_height = this.origin_bbox.height * (y_scale - 1);
         move_y = move_bbox_height / 2 + move_bbox_y;
         move_x = move_bbox_width / 2 + move_bbox_x;
         matrix = this.origin_ctm.translate(-move_x, -move_y);
         matrix = matrix.scaleNonUniform(x_scale, y_scale);
       }
-      return item.setMatrix(matrix);
+      return matrix;
     };
 
     ScaleControl.prototype.onDrop = function() {
@@ -2066,6 +2159,8 @@
     return ScaleControl;
 
   })(Backbone.View);
+
+  _.extend(this.ScaleControl.prototype, StoreAttrsMixin);
 
 }).call(this);
 
@@ -2414,6 +2509,153 @@
     return ItemControl;
 
   })(Backbone.View);
+
+}).call(this);
+
+(function() {
+  this.CommandBase = (function() {
+    function CommandBase() {}
+
+    CommandBase.prototype.execute = function() {
+      return "need override me";
+    };
+
+    CommandBase.prototype.undo = function() {
+      return "need override me";
+    };
+
+    return CommandBase;
+
+  })();
+
+}).call(this);
+
+(function() {
+  var __hasProp = {}.hasOwnProperty,
+    __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
+
+  this.UpdateAttrCommand = (function(_super) {
+    __extends(UpdateAttrCommand, _super);
+
+    function UpdateAttrCommand(element_id, value, prevalue) {
+      this.element_id = element_id;
+      this.value = value;
+      this.prevalue = prevalue;
+    }
+
+    UpdateAttrCommand.prototype.execute = function() {
+      var _ref;
+      return (_ref = this._getElement()) != null ? _ref.attr(this.value) : void 0;
+    };
+
+    UpdateAttrCommand.prototype.undo = function() {
+      var _ref;
+      return (_ref = this._getElement()) != null ? _ref.attr(this.prevalue) : void 0;
+    };
+
+    UpdateAttrCommand.prototype._getElement = function() {
+      var _this = this;
+      return _(SvgCanvasBase.getItems()).find(function(item) {
+        return _this.element_id === item.getElementId();
+      });
+    };
+
+    return UpdateAttrCommand;
+
+  })(CommandBase);
+
+}).call(this);
+
+(function() {
+  this.CommandInvoker = (function() {
+    function CommandInvoker() {}
+
+    CommandInvoker.prototype.execute = function(command) {
+      return command.execute();
+    };
+
+    return CommandInvoker;
+
+  })();
+
+}).call(this);
+
+(function() {
+  this.CommandCreator = (function() {
+    function CommandCreator() {}
+
+    CommandCreator.prototype.createUpdateAttrCommand = function(svg_element, attrs, preattrs) {
+      var id, key, _i, _len, _ref;
+      if (!preattrs) {
+        preattrs = {};
+        _ref = _.keys(attrs);
+        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+          key = _ref[_i];
+          preattrs[key] = svg_element.$el.attr(key) || "";
+        }
+      }
+      id = svg_element.getElementId();
+      console.log('createUpdateAttrCommand', id);
+      return new UpdateAttrCommand(id, attrs, preattrs);
+    };
+
+    return CommandCreator;
+
+  })();
+
+}).call(this);
+
+(function() {
+  this.CommandService = (function() {
+    function CommandService() {
+      this.creator = new CommandCreator();
+      this.invoker = new CommandInvoker();
+      this.stack = [];
+      this.stack_index = 0;
+    }
+
+    CommandService.prototype.getCreator = function() {
+      return this.creator;
+    };
+
+    CommandService.prototype.getInvoker = function() {
+      return this.invoker;
+    };
+
+    CommandService.prototype.redo = function() {
+      var next;
+      next = this.stack_index + 1;
+      if (this.stack[next]) {
+        this.stack[next].execute();
+        this.stack_index = next;
+      }
+      return console.log(this.stack_index, this.stack.length);
+    };
+
+    CommandService.prototype.undo = function() {
+      if (this.stack_index >= this.stack.length) {
+        this.stack_index = this.stack.length - 1;
+      }
+      if (this.stack[this.stack_index]) {
+        this.stack[this.stack_index].undo();
+        this.stack_index -= 1;
+      }
+      return console.log(this.stack_index, this.stack.length);
+    };
+
+    CommandService.prototype.executeCommand = function(command) {
+      if (this.stack_index !== this.stack.length) {
+        this.stack = this.stack.slice(0, this.stack_index + 1);
+        console.log(this.stack, 0, this.stack_index + 1);
+      }
+      this.stack.push(command);
+      this.stack_index = this.stack.length;
+      return this.getInvoker().execute(command);
+    };
+
+    return CommandService;
+
+  })();
 
 }).call(this);
 
@@ -7871,6 +8113,10 @@
   this.SvgExport = function() {
     return (new SvgExporter).toSvg($("#svg-canvas-wrap")[0], "svgfile", "width=600, height=400");
   };
+
+  this.GLOBAL = this.GLOBAL || {};
+
+  this.GLOBAL.commandService = new CommandService();
 
 }).call(this);
 

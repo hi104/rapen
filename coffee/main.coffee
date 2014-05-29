@@ -127,7 +127,7 @@ $(document).ready(() =>
 
     key("backspace, delete", (e) =>
         e.preventDefault();
-        SvgCanvasBase.deleteSelectdItem()
+        SvgCanvasBase.deleteSelectedItem()
     )
 
     key("c", (e) => event_manager.setMode('control'))
@@ -195,7 +195,7 @@ $(document).ready(() =>
         SvgCanvasBase.addFolder()
     )
     $("#delete-item-button").click((e) ->
-        SvgCanvasBase.deleteSelectdItem()
+        SvgCanvasBase.deleteSelectedItem()
     )
 
     initPropertyEdit()
@@ -284,3 +284,7 @@ $(document).ready(() =>
 
 @SvgExport = () =>
     (new SvgExporter).toSvg($("#svg-canvas-wrap")[0], "svgfile", "width=600, height=400")
+
+
+@GLOBAL = @GLOBAL || {}
+@GLOBAL.commandService = new CommandService()

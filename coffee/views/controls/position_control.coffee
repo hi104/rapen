@@ -11,15 +11,17 @@ class @PositionControl extends Backbone.View
         @pre_matrix = @getItem().getLocalMatrix()
         @pre_ctm = @getItem().getCTM()
 
+        @storeAttrs(['transform'])
+
     onDragging:(e) =>
         pos = @_getMovedControlPosition(e)
 
         if e.altKey
             snap_line_view.clear() #TODO global
             snap_line_view.render()
-            @movePosition(pos)
+            @movePosition(@_getMoveMatrix(pos))
         else
-            @_snappingItem( e)
+            @_snappingItem(e)
 
         @trigger("onDragging", @, e)
 
@@ -38,13 +40,15 @@ class @PositionControl extends Backbone.View
         points.push(center_point)
         points
 
-    _snappingItem:(e) =>
+    _getSnapedPoint:(e) =>
         pos = @_getMovedControlPosition(e)
         movep = Snapping.getSnap( @_snapPoints(pos))
         pos.x = pos.x - movep.x
         pos.y = pos.y - movep.y
+        pos
 
-        @movePosition(pos)
+    _snappingItem:(e) =>
+        @movePosition(@getMoveMatrix(e))
 
     onDrop:(e) =>
         @trigger("onDrop", @)
@@ -65,10 +69,19 @@ class @PositionControl extends Backbone.View
         move = @_getItemCoordPos(pos)
         @pre_matrix.translate(move.x, move.y)
 
-    movePosition:(pos) =>
-        @getItem().setMatrix(@_getMoveMatrix(pos))
+    getMoveMatrix:(e) ->
+        @_getMoveMatrix(@_getSnapedPoint(e))
+
+    getMoveTransform: (e) ->
+        SVGUtil.toD3Transform(@getMoveTransform(e)).toString()
+
+    movePosition:(matrix) =>
+        @getItem().attr('transform', SVGUtil.toD3Transform(matrix).toString())
+        # @getItem().setMatrix(matrix)
 
     _getMovedPosition:(e) =>
         dx = e.pageX - @pre_position.pageX
         dy = e.pageY - @pre_position.pageY
         {x:dx, y:dy}
+
+_.extend @PositionControl::, StoreAttrsMixin

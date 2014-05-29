@@ -25,6 +25,8 @@ class @ScaleOneAxisControl extends ScaleControl
            y_scale = scale
 
         if e.altKey
-            @setCenterScale((x_scale*2)-1, (y_scale*2)-1)        #
+            matrix = @setCenterScale((x_scale*2)-1, (y_scale*2)-1)        #
         else
-            @setScale(x_scale, y_scale)
+            matrix = @setScale(x_scale, y_scale)
+
+        @getItem().setMatrix(matrix)

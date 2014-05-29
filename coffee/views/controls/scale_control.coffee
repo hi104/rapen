@@ -55,7 +55,7 @@ class @ScaleControl extends Backbone.View
     controlPosition:() =>
         @getItem().getPosition(@pos)
 
-    saveValue:() =>
+    _saveOriginValue:() =>
 
         @_pre_vec_x = @_getVecPoint(@controlPosition(), @xAxis())
         @_pre_vec_y = @_getVecPoint(@controlPosition(), @yAxis())
@@ -74,9 +74,18 @@ class @ScaleControl extends Backbone.View
             rx :$(item.el).attr("rx"),
             ry : $(item.el).attr("ry")}
 
+        @storeAttrs([
+            'width',
+            'height',
+            'r',
+            'rx',
+            'ry',
+            'transform'
+        ])
+
     onMouseDown:(e) =>
         @trigger("onMouseDown", @, e)
-        @saveValue()
+        @_saveOriginValue()
 
     _getVecPoint:(p1, p2) ->
         SVGUtil.createPoint(p2.x - p1.x, p2.y - p1.y)
@@ -106,9 +115,11 @@ class @ScaleControl extends Backbone.View
                 x_scale = y_scale
 
         if e.altKey
-            @setCenterScale((x_scale*2)-1, (y_scale*2)-1)
+            matrix = @setCenterScale((x_scale*2)-1, (y_scale*2)-1)
         else
-            @setScale(x_scale, y_scale)
+            matrix = @setScale(x_scale, y_scale)
+
+        @getItem().setMatrix(matrix)
 
     getSnapPoint:(e) =>
         snap_points = []
@@ -159,14 +170,12 @@ class @ScaleControl extends Backbone.View
             set_ry = -set_ry if @pos.y != -1
             matrix = @origin_ctm.translate(-set_rx, -set_ry)
         else
-            box_width = @origin_bbox.width
-            box_height =  @origin_bbox.height
+            move_bbox_x = @origin_bbox.x * (x_scale-1)
+            move_bbox_y = @origin_bbox.y * (y_scale-1)
 
-            move_bbox_x = (@origin_bbox.x * x_scale) - @origin_bbox.x
-            move_bbox_y = (@origin_bbox.y * y_scale) - @origin_bbox.y
+            move_bbox_width = @origin_bbox.width * (x_scale-1)
+            move_bbox_height = @origin_bbox.height * (y_scale-1)
 
-            move_bbox_width = (box_width * x_scale) - box_width
-            move_bbox_height = (box_height * y_scale) - box_height
             if @pos.x != -1
                 move_x = move_bbox_x
             else
@@ -180,7 +189,7 @@ class @ScaleControl extends Backbone.View
             matrix = @origin_ctm.translate(-move_x, -move_y)
             matrix = matrix.scaleNonUniform(x_scale, y_scale)
 
-        item.setMatrix(matrix)
+        matrix
 
     setCenterScale:(x_scale, y_scale) =>
         item = @getItem()
@@ -208,14 +217,11 @@ class @ScaleControl extends Backbone.View
             item.attr({"rx":x_value, "ry":y_value})
             matrix = @origin_ctm
         else
-            box_width = @origin_bbox.width
-            box_height =  @origin_bbox.height
+            move_bbox_x = @origin_bbox.x * (x_scale-1)
+            move_bbox_y = @origin_bbox.y * (y_scale-1)
 
-            move_bbox_x = (@origin_bbox.x * x_scale) - @origin_bbox.x
-            move_bbox_y = (@origin_bbox.y * y_scale) - @origin_bbox.y
-
-            move_bbox_width = (box_width * x_scale) - box_width
-            move_bbox_height = (box_height * y_scale) - box_height
+            move_bbox_width = @origin_bbox.width * (x_scale-1)
+            move_bbox_height = @origin_bbox.height * (y_scale-1)
 
             move_y = move_bbox_height/2 + move_bbox_y
             move_x = move_bbox_width/2 + move_bbox_x
@@ -223,8 +229,7 @@ class @ScaleControl extends Backbone.View
             matrix = @origin_ctm.translate(-move_x, -move_y)
             matrix = matrix.scaleNonUniform(x_scale, y_scale)
 
-        item.setMatrix(matrix)
-
+        matrix
 
     onDrop:() =>
         console.log("ScaleControl onDrop")
@@ -241,3 +246,5 @@ class @ScaleControl extends Backbone.View
         cy = @controlPosition().y
         $(@el).attr("x", cx-@mark_size/2)
         $(@el).attr("y", cy-@mark_size/2)
+
+_.extend @ScaleControl::, StoreAttrsMixin

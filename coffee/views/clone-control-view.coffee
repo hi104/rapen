@@ -183,10 +183,31 @@ class @CloneControlView extends Backbone.View
         $(document).mousemove(sender.onDragging)
         ondrop = (e) =>
             sender.onDrop(e) if sender.onDrop
+            console.log 'onDrop', sender.constructor.name
+            # if @isOneItem()
+            @_executeCommand(sender, e)
             $(document).unbind('mousemove', sender.onDragging)
             $(document).unbind('mouseup', ondrop)
             @cancelEvent(e)
         $(document).mouseup(ondrop)
+
+    _executeCommand:(control, e) ->
+        creator = GLOBAL.commandService.getCreator()
+        service = GLOBAL.commandService
+        if (control instanceof PositionControl) or
+           (control instanceof ScaleControl) or
+           (control instanceof RotateControl)
+            console.log '_executeCommand', control
+            attr = control.getChangedAttrs()
+            console.log attr
+            console.log attr.current
+            console.log attr.pre
+            com = creator.createUpdateAttrCommand(
+                control.getItem(),
+                attr.current,
+                attr.pre
+            )
+            service.executeCommand(com)
 
     attachCopyDragEvent:(sender, e) =>
         @mode = "copy"
@@ -226,11 +247,12 @@ class @CloneControlView extends Backbone.View
         )
 
         _(orderd_list).each((item) =>
+            clone = item.clone()
             local = item.getLocalMatrix()
-            item.setMatrix(matrix.multiply(local))
-            el = item.el.cloneNode(true)
-            $(el).removeAttr("pointer-events")
-            copy_items.push(@canvas.addElement(el))
+            clone.setMatrix(matrix.multiply(local))
+            # el = item.el.cloneNode(true)
+            $(clone.el).removeAttr("pointer-events")
+            copy_items.push(@canvas.addItem(clone))
         )
         copy_items
 

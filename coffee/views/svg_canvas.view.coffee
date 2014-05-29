@@ -185,7 +185,7 @@ class @SvgCanvas extends Backbone.View
         x: (e.pageX - offset.left)
         y: (e.pageY - offset.top)
 
-    deleteSelectdItem:() =>
+    deleteSelectedItem:() =>
         @control.item_list.each((e) =>
              @removeItem(e.get("origin_model"))
         )

@@ -22,11 +22,31 @@ class @SvgElement extends Backbone.Model
         @$el = $(element)
         @attr("data-name", @$el.data("name"))
 
+    getElementId:() ->
+        @$el.attr('id')
+
+    clone:() ->
+        newElement = new SvgElement()
+        newElement.setElement(@el.cloneNode(true))
+        @_updateElementId(newElement.el)
+        newElement
+
+    _updateElementId:(element)->
+        $(element).attr('id', @generateId())
+
+        $(element).find('*').each((i, e) ->
+            $(el).attr('id', @generateId())
+        )
+
+    generateId: () =>
+        SvgCanvasBase.generateId()
+
     setMatrix:(matrix) =>
-        # transform = SVGUtil.toD3Transform(matrix)
-        # @attr("transform", transform)
-        SVGUtil.setMatrixTransform(@el, matrix)
-        @set({"matrix": matrix})
+        transform = SVGUtil.toD3Transform(matrix)
+        @attr("transform", transform.toString())
+
+        # SVGUtil.setMatrixTransform(@el, matrix)
+        # @set({"matrix": matrix})
 
     attr:(key, val, options) =>
         if (typeof key == 'object')
@@ -36,6 +56,9 @@ class @SvgElement extends Backbone.Model
             (attrs = {})[key] = val;
         $(@el).attr(attrs)
         @set(attrs)
+
+    getAttr:(key) ->
+        $(@el).attr(key)
 #
 # select when clone control selected item
 #
@@ -146,8 +169,8 @@ class @SvgElement extends Backbone.Model
     _getPosition:(pos) =>
         svg_rect = @getBBox()
         point = SVGUtil.SVG.createSVGPoint()
-        point.x = svg_rect.x  + (svg_rect.width/2)*(1 + pos.x)
-        point.y = svg_rect.y  + (svg_rect.height/2)*(1 + pos.y)
+        point.x = svg_rect.x + (svg_rect.width/2)*(1 + pos.x)
+        point.y = svg_rect.y + (svg_rect.height/2)*(1 + pos.y)
         point
 
     getPosition:(pos) =>

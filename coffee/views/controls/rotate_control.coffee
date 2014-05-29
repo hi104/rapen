@@ -19,6 +19,9 @@ class @RotateControl extends Backbone.View
         @trigger("onMouseDown", @, e)
         @_origin_matrix = @getItem().getLocalMatrix()
         @_origin_rotate_point = @getItem().getCentorPoint()
+        @storeAttrs([
+            'transform'
+        ])
 
     onDragging:(e)=>
         mouse_point =SVGUtil.createPoint(e.pageX, e.pageY)
@@ -125,3 +128,5 @@ class @RotateControl extends Backbone.View
         element = $(@el)
         element.attr("cx", point.x + point2.x + point3.x)
         element.attr("cy", point.y + point2.y + point3.y)
+
+_.extend @RotateControl::, StoreAttrsMixin
