@@ -28,6 +28,7 @@ module.exports = function(grunt) {
                       "coffee/views/controls/item_control_view.coffee",
                       "coffee/views/commands/base.coffee",
                       "coffee/views/commands/commands.coffee",
+                      "coffee/views/commands/command_stack.coffee",
                       "coffee/views/commands/command_invoker.coffee",
                       "coffee/views/commands/command_creator.coffee",
                       "coffee/views/commands/command_service.coffee",
