@@ -11,8 +11,18 @@ class @UpdateAttrCommand extends CommandBase
             @element_id == item.getElementId()
         )
 
+class @MultiCommand extends CommandBase
+    constructor:(@commands) ->
+    execute:() -> _(@commands).invoke('execute')
+    undo: () -> _(@commands).invoke('undo')
+
+
 # class @addItemCommand extends CommandBase
 #     constructor:(folder_id, element_id, element_svg_text)
 
 
 # class @removeItemCommand extends CommandBase
+#
+#
+# z-order change command
+#

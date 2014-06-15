@@ -8,9 +8,12 @@ class @CommandCreator
                 preattrs[key] = svg_element.$el.attr(key) || ""
 
         id = svg_element.getElementId()
-        console.log 'createUpdateAttrCommand', id
+
         new UpdateAttrCommand(
             id,
             attrs,
             preattrs
         )
+
+    createMultiCommand:(commands)->
+        new MultiCommand(commands)

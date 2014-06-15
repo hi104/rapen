@@ -25,6 +25,7 @@ class @CloneControlView extends Backbone.View
             manager:@
         })
         @mode = ""
+        @_store_pre_item_attrs = {}
 
     getControl:() => @itemControl
 
@@ -151,7 +152,7 @@ class @CloneControlView extends Backbone.View
         if @mode == "copy"
             @$el.attr("opacity", 0.5)
         else
-            @$el.attr("opacity", 0)
+            @$el.attr("opacity", 0.3)
         @itemControl.render()
         @line_list_view.render()
 
@@ -183,31 +184,82 @@ class @CloneControlView extends Backbone.View
         $(document).mousemove(sender.onDragging)
         ondrop = (e) =>
             sender.onDrop(e) if sender.onDrop
-            console.log 'onDrop', sender.constructor.name
-            # if @isOneItem()
-            @_executeCommand(sender, e)
+            if @isOneItem()
+                @_executeCommandForSelectedOneItem(sender, e)
+            else
+                @_executeCommand(sender, e)
+
             $(document).unbind('mousemove', sender.onDragging)
             $(document).unbind('mouseup', ondrop)
             @cancelEvent(e)
         $(document).mouseup(ondrop)
+        @_storeItemTransform()
+
+    _storeItemTransform:()->
+
+        @_store_pre_item_attrs = {}
+        matrix = @item.getLocalMatrix()
+        @item_list.each((item) =>
+            origin_model = item.get('origin_model')
+            attr = {}
+            pre_matrix = origin_model.getLocalMatrix()
+
+            transform = SVGUtil.toD3Transform(pre_matrix)
+            attr = {transform: transform.toString()}
+            id = origin_model.getElementId()
+            @_store_pre_item_attrs[id] = attr
+        )
+
+        console.log @_store_pre_item_attrs
 
     _executeCommand:(control, e) ->
-        creator = GLOBAL.commandService.getCreator()
         service = GLOBAL.commandService
+        creator = service.getCreator()
         if (control instanceof PositionControl) or
            (control instanceof ScaleControl) or
-           (control instanceof RotateControl)
-            console.log '_executeCommand', control
+           (control instanceof RotateControl) or
+           (control instanceof RotateAxisControl)
+
+            matrix = @item.getLocalMatrix()
+
+            commands = @item_list.map((item) =>
+                attr = {}
+                pre_matrix = item.getLocalMatrix()
+                after_matrix = matrix.multiply(pre_matrix)
+
+                pre_attrs = @_store_pre_item_attrs[item.get('origin_model').getElementId()]
+                attr.pre  = pre_attrs
+
+                transform = SVGUtil.toD3Transform(after_matrix)
+                attr.current = {transform: transform.toString()}
+
+                creator.createUpdateAttrCommand(
+                    item.get("origin_model"),
+                    attr.current,
+                    attr.pre
+                )
+            )
+
+            service.executeCommand(
+                creator.createMultiCommand(commands)
+            )
+
+    _executeCommandForSelectedOneItem:(control, e) ->
+        service = GLOBAL.commandService
+        creator = service.getCreator()
+        if (control instanceof PositionControl) or
+           (control instanceof ScaleControl) or
+           (control instanceof RotateControl)or
+           (control instanceof RotateAxisControl)
+
             attr = control.getChangedAttrs()
-            console.log attr
-            console.log attr.current
-            console.log attr.pre
             com = creator.createUpdateAttrCommand(
                 control.getItem(),
                 attr.current,
                 attr.pre
             )
-            service.executeCommand(com)
+            if not _.isEqual(attr.current, attr.pre)
+                service.executeCommand(com)
 
     attachCopyDragEvent:(sender, e) =>
         @mode = "copy"

@@ -30,6 +30,9 @@ class @RotateAxisControl extends Backbone.View
 
         center = @getItem().getCentorPoint()
         @_origin_degree = @_radianToDegree(@_radian(center, @_origin_rotate_point))
+        @storeAttrs([
+            'transform'
+        ])
 
     onDragging:(e)=>
         mouse_point = SVGUtil.createPoint(e.pageX, e.pageY)
@@ -84,3 +87,5 @@ class @RotateAxisControl extends Backbone.View
 
     render_rotate_point:() =>
         @rotate_point_view.render()
+
+_.extend @RotateAxisControl::, StoreAttrsMixin
