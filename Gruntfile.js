@@ -73,6 +73,7 @@ module.exports = function(grunt) {
                       "coffee/views/panels/gradient_panel_view.coffee",
                       "coffee/views/panels/pattern_panel_view.coffee",
                       "coffee/views/panels/filter_panel_view.coffee",
+                      "coffee/views/undo/undo_redo_view.coffee",
                       "coffee/lib/svg_util.coffee",
                       "coffee/lib/file_util.coffee",
                       "coffee/lib/svg_exporter.coffee",

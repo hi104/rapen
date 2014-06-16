@@ -110,8 +110,18 @@ $(document).ready(() =>
     )
 
     event_manager.setMode('control')
-    mode_view = new ModeView(el:$("#mode-btn-group"), manager:event_manager)
+    mode_view = new ModeView(
+        el: $("#mode-btn-group"),
+        manager: event_manager
+    )
     mode_view.render()
+
+    @undo_redo_view = new UndoRedoView(
+        el: $('#undo-redo-view'),
+        stack: GLOBAL.commandService.command_stack
+    )
+
+    undo_redo_view.render()
 
     for i in _.map(_.range(1, 30), (e) -> 0.1 * e )
         temp = _.template('<option value="{{val}}" {{option}}> {{name}}</option>')

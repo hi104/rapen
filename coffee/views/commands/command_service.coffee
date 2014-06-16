@@ -3,9 +3,6 @@ class @CommandService
         @creator = new CommandCreator()
         @invoker = new CommandInvoker()
         @command_stack = new CommandStack()
-        @command_stack.on('change', (stack) ->
-            console.log 'change stack', stack
-        )
 
     getCreator:() -> @creator
 

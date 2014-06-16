@@ -1,6 +1,7 @@
 class @CommandStack
 
     constructor:() ->
+        @_max_stack_size = 20
         @stack = []
         @stack_index = 0
 
@@ -15,7 +16,7 @@ class @CommandStack
             @_setIndex(next)
 
     undo:() ->
-        if @stack_index >= @stack.length
+        if @stack_index > @stack.length-1
             @stack_index = @stack.length-1
 
         if @stack[@stack_index]
@@ -26,14 +27,17 @@ class @CommandStack
         @stack.length > 0
 
     avaiableRedo:() ->
-        @avaiableStack() and @stack_index < @stack.length
+        @avaiableStack() and (@stack_index+1) < @stack.length
 
     avaiableUndo:() ->
-        @avaiableStack() and @stack_index > 0
+        @avaiableStack() and @stack_index > -1
 
     push:(command) ->
         if @stack_index != @stack.length
             @stack = @stack.slice(0, @stack_index+1)
+
+        if @stack.length > @_max_stack_size
+            @stack.shift()
 
         @stack.push command
         @_setIndex(@stack.length)
