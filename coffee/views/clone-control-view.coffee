@@ -298,13 +298,27 @@ class @CloneControlView extends Backbone.View
             $(el).index()
         )
 
+        service = GLOBAL.commandService
+        creator = service.getCreator()
+        commands = []
         _(orderd_list).each((item) =>
             clone = item.clone()
             local = item.getLocalMatrix()
             clone.setMatrix(matrix.multiply(local))
-            # el = item.el.cloneNode(true)
             $(clone.el).removeAttr("pointer-events")
-            copy_items.push(@canvas.addItem(clone))
+
+            clone_item = @canvas.addItem(clone)
+
+            com = new AddItemCommand(0,
+                clone_item.getElementId(),
+                clone_item.toXML()
+            )
+            commands.push com
+            copy_items.push clone_item
+        )
+        service.executeCommand(
+            creator.createMultiCommand(commands),
+            false
         )
         copy_items
 

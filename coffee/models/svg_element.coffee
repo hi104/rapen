@@ -211,3 +211,7 @@ class @SvgElement extends Backbone.Model
 
     flipY:() =>
         @centerScale(1, -1)
+
+    toXML: () ->
+        serializer = new XMLSerializer()
+        serializer.serializeToString(@el)

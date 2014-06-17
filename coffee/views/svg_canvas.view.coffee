@@ -19,6 +19,11 @@ class @SvgCanvas extends Backbone.View
         # id = @unique_index++
         "item-" + UUID.generate()
 
+    getItemById:(id) ->
+        _(@getItems()).find((item) =>
+            id == item.getElementId()
+        )
+
     getItems:() ->
         _.flatten(@_getItems(@rootFolder))
 
@@ -32,6 +37,9 @@ class @SvgCanvas extends Backbone.View
 
     removeItem:(item) =>
         item.folder.remove(item)
+
+    removeItemById:(id) ->
+        @removeItem(@getItemById(id))
 
     addItem:(item) =>
         elm = item.el
@@ -186,7 +194,17 @@ class @SvgCanvas extends Backbone.View
         y: (e.pageY - offset.top)
 
     deleteSelectedItem:() =>
-        @control.item_list.each((e) =>
-             @removeItem(e.get("origin_model"))
+        service = GLOBAL.commandService
+        creator = service.getCreator()
+
+        commands = @control.item_list.map((e) =>
+            # @removeItem()
+            item = e.get("origin_model")
+            id = item.getElementId()
+            new RemoveItemCommand(0, id, item.toXML())
+        )
+
+        service.executeCommand(
+            creator.createMultiCommand(commands)
         )
         @control.clear()

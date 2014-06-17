@@ -49,12 +49,21 @@ class @SvgItemToolView extends SvgItemListView
         $("#svg-item-tool").hide();
 
         if isContain()
+            service = GLOBAL.commandService
+            creator = service.getCreator()
 
             clone_node = @getSelectedItemElement(sender).cloneNode(true)
             $(@_mainCanvas).append(clone_node)
             canvas_matrix = @_mainCanvas.getScreenCTM()
             SVGUtil.setMatrixTransform(clone_node, canvas_matrix.inverse().multiply(screen_ctm))
-            @_canvas.addElement(clone_node)
+            item = @_canvas.addElement(clone_node)
+
+            com = new AddItemCommand(0,
+                item.getElementId(),
+                item.toXML()
+            )
+            console.log com, item
+            service.executeCommand(com, false)
 
     mouseDraggingItem:(sender, e) =>
         @_updateDraggingItemPosition(e)

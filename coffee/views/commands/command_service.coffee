@@ -14,6 +14,6 @@ class @CommandService
     undo:() ->
         @command_stack.undo()
 
-    executeCommand:(command) ->
+    executeCommand:(command, execute = true) ->
         @command_stack.push(command)
-        @getInvoker().execute(command)
+        @getInvoker().execute(command) if execute

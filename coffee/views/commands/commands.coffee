@@ -7,9 +7,8 @@ class @UpdateAttrCommand extends CommandBase
 
     _getElement:() ->
         # TODO global variable
-        _(SvgCanvasBase.getItems()).find((item) =>
-            @element_id == item.getElementId()
-        )
+        SvgCanvasBase.getItemById(@element_id)
+
 
 class @MultiCommand extends CommandBase
     constructor:(@commands) ->
@@ -17,11 +16,37 @@ class @MultiCommand extends CommandBase
     undo: () -> _(@commands).invoke('undo')
 
 
-# class @addItemCommand extends CommandBase
-#     constructor:(folder_id, element_id, element_svg_text)
+class @AddItemCommand extends CommandBase
+
+    constructor:(@folder_id, @element_id, @element_svg_text) ->
+
+    execute:() ->
+        @addItem()
+
+    undo:() ->
+        @removeItem()
+
+    addItem:() ->
+        elm = $(@_wrapSvg(@element_svg_text)).children()[0]
+        SvgCanvasBase.addElement(elm)
+
+    removeItem:() ->
+        SvgCanvasBase.removeItemById(@element_id)
+
+    _wrapSvg:(svg_text) ->
+        svg_head = '<svg xmlns:xlink="http://www.w3.org/1999/xlink" xmlns="http://www.w3.org/2000/svg">'
+        svg_footer = '</svg>'
+        svg_head + svg_text + svg_footer
 
 
-# class @removeItemCommand extends CommandBase
+class @RemoveItemCommand extends AddItemCommand
+
+    execute:() ->
+        @removeItem()
+
+    undo:() ->
+        @addItem()
+
 #
 #
 # z-order change command
