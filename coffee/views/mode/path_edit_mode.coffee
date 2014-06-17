@@ -16,7 +16,9 @@ class @PathEditMode
         #
         @position_control.onDragging = (e) =>
             pos = @position_control._getMovedControlPosition(e)
-            @position_control.movePosition(pos)
+            matrix = @position_control._getMoveMatrix(pos)
+            @position_control.movePosition(matrix)
+            svgPathControl.render()
 
         @position_control.bind("onMouseDown", (obj, e) =>
             $(document).mousemove(@position_control.onDragging)
@@ -39,7 +41,6 @@ class @PathEditMode
                 @cancelEvent(e)
                 @position_control.getItem = () => sender.model
                 @position_control.onMouseDown(e)
-                # @maneger.getControl().itemControl.position_control.onMouseDown(e)
 
         else if sender instanceof SvgCanvas
             if event  ==  "onMouseDown" and not e.altKey
