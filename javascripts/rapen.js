@@ -348,6 +348,12 @@
       return this.centerScale(1, -1);
     };
 
+    SvgElement.prototype.toXML = function() {
+      var serializer;
+      serializer = new XMLSerializer();
+      return serializer.serializeToString(this.el);
+    };
+
     return SvgElement;
 
   })(Backbone.Model);
@@ -761,7 +767,8 @@
         el: this.options.select_el,
         manager: this
       });
-      return this.mode = "";
+      this.mode = "";
+      return this._store_pre_item_attrs = {};
     };
 
     CloneControlView.prototype.getControl = function() {
@@ -944,7 +951,7 @@
       if (this.mode === "copy") {
         this.$el.attr("opacity", 0.5);
       } else {
-        this.$el.attr("opacity", 0);
+        this.$el.attr("opacity", 0.3);
       }
       this.itemControl.render();
       return this.line_list_view.render();
@@ -987,27 +994,72 @@
         if (sender.onDrop) {
           sender.onDrop(e);
         }
-        console.log('onDrop', sender.constructor.name);
-        _this._executeCommand(sender, e);
+        if (_this.isOneItem()) {
+          _this._executeCommandForSelectedOneItem(sender, e);
+        } else {
+          _this._executeCommand(sender, e);
+        }
         $(document).unbind('mousemove', sender.onDragging);
         $(document).unbind('mouseup', ondrop);
         return _this.cancelEvent(e);
       };
-      return $(document).mouseup(ondrop);
+      $(document).mouseup(ondrop);
+      return this._storeItemTransform();
+    };
+
+    CloneControlView.prototype._storeItemTransform = function() {
+      var matrix,
+        _this = this;
+      this._store_pre_item_attrs = {};
+      matrix = this.item.getLocalMatrix();
+      return this.item_list.each(function(item) {
+        var attr, id, origin_model, pre_matrix, transform;
+        origin_model = item.get('origin_model');
+        attr = {};
+        pre_matrix = origin_model.getLocalMatrix();
+        transform = SVGUtil.toD3Transform(pre_matrix);
+        attr = {
+          transform: transform.toString()
+        };
+        id = origin_model.getElementId();
+        return _this._store_pre_item_attrs[id] = attr;
+      });
     };
 
     CloneControlView.prototype._executeCommand = function(control, e) {
-      var attr, com, creator, service;
-      creator = GLOBAL.commandService.getCreator();
+      var commands, creator, matrix, service,
+        _this = this;
       service = GLOBAL.commandService;
-      if ((control instanceof PositionControl) || (control instanceof ScaleControl) || (control instanceof RotateControl)) {
-        console.log('_executeCommand', control);
+      creator = service.getCreator();
+      if ((control instanceof PositionControl) || (control instanceof ScaleControl) || (control instanceof RotateControl) || (control instanceof RotateAxisControl)) {
+        matrix = this.item.getLocalMatrix();
+        commands = this.item_list.map(function(item) {
+          var after_matrix, attr, pre_attrs, pre_matrix, transform;
+          attr = {};
+          pre_matrix = item.getLocalMatrix();
+          after_matrix = matrix.multiply(pre_matrix);
+          pre_attrs = _this._store_pre_item_attrs[item.get('origin_model').getElementId()];
+          attr.pre = pre_attrs;
+          transform = SVGUtil.toD3Transform(after_matrix);
+          attr.current = {
+            transform: transform.toString()
+          };
+          return creator.createUpdateAttrCommand(item.get("origin_model"), attr.current, attr.pre);
+        });
+        return service.executeCommand(creator.createMultiCommand(commands));
+      }
+    };
+
+    CloneControlView.prototype._executeCommandForSelectedOneItem = function(control, e) {
+      var attr, com, creator, service;
+      service = GLOBAL.commandService;
+      creator = service.getCreator();
+      if ((control instanceof PositionControl) || (control instanceof ScaleControl) || (control instanceof RotateControl) || (control instanceof RotateAxisControl)) {
         attr = control.getChangedAttrs();
-        console.log(attr);
-        console.log(attr.current);
-        console.log(attr.pre);
         com = creator.createUpdateAttrCommand(control.getItem(), attr.current, attr.pre);
-        return service.executeCommand(com);
+        if (!_.isEqual(attr.current, attr.pre)) {
+          return service.executeCommand(com);
+        }
       }
     };
 
@@ -1046,7 +1098,7 @@
     };
 
     CloneControlView.prototype._createCopyItems = function() {
-      var copy_items, matrix, orderd_list,
+      var commands, copy_items, creator, matrix, orderd_list, service,
         _this = this;
       matrix = this.item.getLocalMatrix();
       copy_items = [];
@@ -1055,14 +1107,21 @@
         el = item.get("origin_model").el;
         return $(el).index();
       });
+      service = GLOBAL.commandService;
+      creator = service.getCreator();
+      commands = [];
       _(orderd_list).each(function(item) {
-        var clone, local;
+        var clone, clone_item, com, local;
         clone = item.clone();
         local = item.getLocalMatrix();
         clone.setMatrix(matrix.multiply(local));
         $(clone.el).removeAttr("pointer-events");
-        return copy_items.push(_this.canvas.addItem(clone));
+        clone_item = _this.canvas.addItem(clone);
+        com = new AddItemCommand(0, clone_item.getElementId(), clone_item.toXML());
+        commands.push(com);
+        return copy_items.push(clone_item);
       });
+      service.executeCommand(creator.createMultiCommand(commands), false);
       return copy_items;
     };
 
@@ -1543,7 +1602,8 @@
       this._origin_matrix = this.getItem().getLocalMatrix();
       this._origin_rotate_point = this.getRotateAxisPoint().matrixTransform(SvgCanvasBase.mainCanvas.getScreenCTM());
       center = this.getItem().getCentorPoint();
-      return this._origin_degree = this._radianToDegree(this._radian(center, this._origin_rotate_point));
+      this._origin_degree = this._radianToDegree(this._radian(center, this._origin_rotate_point));
+      return this.storeAttrs(['transform']);
     };
 
     RotateAxisControl.prototype.onDragging = function(e) {
@@ -1610,6 +1670,8 @@
     return RotateAxisControl;
 
   })(Backbone.View);
+
+  _.extend(this.RotateAxisControl.prototype, StoreAttrsMixin);
 
 }).call(this);
 
@@ -2312,7 +2374,7 @@
     };
 
     ScaleOneAxisControl.prototype.onDragging = function(e) {
-      var dist, scale, snap_point, x_scale, y_scale;
+      var dist, matrix, scale, snap_point, x_scale, y_scale;
       snap_point = this.getSnapPoint(e);
       this.control_vec = this._getVecPoint(this.pre_fixed_point, snap_point);
       dist = this._getDist(this._pre_vec);
@@ -2325,10 +2387,11 @@
         y_scale = scale;
       }
       if (e.altKey) {
-        return this.setCenterScale((x_scale * 2) - 1, (y_scale * 2) - 1);
+        matrix = this.setCenterScale((x_scale * 2) - 1, (y_scale * 2) - 1);
       } else {
-        return this.setScale(x_scale, y_scale);
+        matrix = this.setScale(x_scale, y_scale);
       }
+      return this.getItem().setMatrix(matrix);
     };
 
     return ScaleOneAxisControl;
@@ -2531,7 +2594,8 @@
 }).call(this);
 
 (function() {
-  var __hasProp = {}.hasOwnProperty,
+  var _ref,
+    __hasProp = {}.hasOwnProperty,
     __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
 
   this.UpdateAttrCommand = (function(_super) {
@@ -2554,15 +2618,152 @@
     };
 
     UpdateAttrCommand.prototype._getElement = function() {
-      var _this = this;
-      return _(SvgCanvasBase.getItems()).find(function(item) {
-        return _this.element_id === item.getElementId();
-      });
+      return SvgCanvasBase.getItemById(this.element_id);
     };
 
     return UpdateAttrCommand;
 
   })(CommandBase);
+
+  this.MultiCommand = (function(_super) {
+    __extends(MultiCommand, _super);
+
+    function MultiCommand(commands) {
+      this.commands = commands;
+    }
+
+    MultiCommand.prototype.execute = function() {
+      return _(this.commands).invoke('execute');
+    };
+
+    MultiCommand.prototype.undo = function() {
+      return _(this.commands).invoke('undo');
+    };
+
+    return MultiCommand;
+
+  })(CommandBase);
+
+  this.AddItemCommand = (function(_super) {
+    __extends(AddItemCommand, _super);
+
+    function AddItemCommand(folder_id, element_id, element_svg_text) {
+      this.folder_id = folder_id;
+      this.element_id = element_id;
+      this.element_svg_text = element_svg_text;
+    }
+
+    AddItemCommand.prototype.execute = function() {
+      return this.addItem();
+    };
+
+    AddItemCommand.prototype.undo = function() {
+      return this.removeItem();
+    };
+
+    AddItemCommand.prototype.addItem = function() {
+      var elm;
+      elm = $(this._wrapSvg(this.element_svg_text)).children()[0];
+      return SvgCanvasBase.addElement(elm);
+    };
+
+    AddItemCommand.prototype.removeItem = function() {
+      return SvgCanvasBase.removeItemById(this.element_id);
+    };
+
+    AddItemCommand.prototype._wrapSvg = function(svg_text) {
+      var svg_footer, svg_head;
+      svg_head = '<svg xmlns:xlink="http://www.w3.org/1999/xlink" xmlns="http://www.w3.org/2000/svg">';
+      svg_footer = '</svg>';
+      return svg_head + svg_text + svg_footer;
+    };
+
+    return AddItemCommand;
+
+  })(CommandBase);
+
+  this.RemoveItemCommand = (function(_super) {
+    __extends(RemoveItemCommand, _super);
+
+    function RemoveItemCommand() {
+      _ref = RemoveItemCommand.__super__.constructor.apply(this, arguments);
+      return _ref;
+    }
+
+    RemoveItemCommand.prototype.execute = function() {
+      return this.removeItem();
+    };
+
+    RemoveItemCommand.prototype.undo = function() {
+      return this.addItem();
+    };
+
+    return RemoveItemCommand;
+
+  })(AddItemCommand);
+
+}).call(this);
+
+(function() {
+  this.CommandStack = (function() {
+    function CommandStack() {
+      this._max_stack_size = 20;
+      this.stack = [];
+      this.stack_index = 0;
+    }
+
+    CommandStack.prototype._setIndex = function(value) {
+      this.stack_index = value;
+      return this.trigger('change', this);
+    };
+
+    CommandStack.prototype.redo = function() {
+      var next;
+      next = this.stack_index + 1;
+      if (this.stack[next]) {
+        this.stack[next].execute();
+        return this._setIndex(next);
+      }
+    };
+
+    CommandStack.prototype.undo = function() {
+      if (this.stack_index > this.stack.length - 1) {
+        this.stack_index = this.stack.length - 1;
+      }
+      if (this.stack[this.stack_index]) {
+        this.stack[this.stack_index].undo();
+        return this._setIndex(this.stack_index - 1);
+      }
+    };
+
+    CommandStack.prototype.avaiableStack = function() {
+      return this.stack.length > 0;
+    };
+
+    CommandStack.prototype.avaiableRedo = function() {
+      return this.avaiableStack() && (this.stack_index + 1) < this.stack.length;
+    };
+
+    CommandStack.prototype.avaiableUndo = function() {
+      return this.avaiableStack() && this.stack_index > -1;
+    };
+
+    CommandStack.prototype.push = function(command) {
+      if (this.stack_index !== this.stack.length) {
+        this.stack = this.stack.slice(0, this.stack_index + 1);
+      }
+      if (this.stack.length > this._max_stack_size) {
+        this.stack.shift();
+      }
+      this.stack.push(command);
+      return this._setIndex(this.stack.length);
+    };
+
+    return CommandStack;
+
+  })();
+
+  _.extend(this.CommandStack.prototype, Backbone.Events);
 
 }).call(this);
 
@@ -2595,8 +2796,11 @@
         }
       }
       id = svg_element.getElementId();
-      console.log('createUpdateAttrCommand', id);
       return new UpdateAttrCommand(id, attrs, preattrs);
+    };
+
+    CommandCreator.prototype.createMultiCommand = function(commands) {
+      return new MultiCommand(commands);
     };
 
     return CommandCreator;
@@ -2610,8 +2814,7 @@
     function CommandService() {
       this.creator = new CommandCreator();
       this.invoker = new CommandInvoker();
-      this.stack = [];
-      this.stack_index = 0;
+      this.command_stack = new CommandStack();
     }
 
     CommandService.prototype.getCreator = function() {
@@ -2623,34 +2826,21 @@
     };
 
     CommandService.prototype.redo = function() {
-      var next;
-      next = this.stack_index + 1;
-      if (this.stack[next]) {
-        this.stack[next].execute();
-        this.stack_index = next;
-      }
-      return console.log(this.stack_index, this.stack.length);
+      return this.command_stack.redo();
     };
 
     CommandService.prototype.undo = function() {
-      if (this.stack_index >= this.stack.length) {
-        this.stack_index = this.stack.length - 1;
-      }
-      if (this.stack[this.stack_index]) {
-        this.stack[this.stack_index].undo();
-        this.stack_index -= 1;
-      }
-      return console.log(this.stack_index, this.stack.length);
+      return this.command_stack.undo();
     };
 
-    CommandService.prototype.executeCommand = function(command) {
-      if (this.stack_index !== this.stack.length) {
-        this.stack = this.stack.slice(0, this.stack_index + 1);
-        console.log(this.stack, 0, this.stack_index + 1);
+    CommandService.prototype.executeCommand = function(command, execute) {
+      if (execute == null) {
+        execute = true;
       }
-      this.stack.push(command);
-      this.stack_index = this.stack.length;
-      return this.getInvoker().execute(command);
+      this.command_stack.push(command);
+      if (execute) {
+        return this.getInvoker().execute(command);
+      }
     };
 
     return CommandService;
@@ -5731,7 +5921,7 @@
     __extends(SvgCanvas, _super);
 
     function SvgCanvas() {
-      this.deleteSelectdItem = __bind(this.deleteSelectdItem, this);
+      this.deleteSelectedItem = __bind(this.deleteSelectedItem, this);
       this._getPosition = __bind(this._getPosition, this);
       this._getMovedPosition = __bind(this._getMovedPosition, this);
       this.moveDrop = __bind(this.moveDrop, this);
@@ -5776,6 +5966,13 @@
       return "item-" + UUID.generate();
     };
 
+    SvgCanvas.prototype.getItemById = function(id) {
+      var _this = this;
+      return _(this.getItems()).find(function(item) {
+        return id === item.getElementId();
+      });
+    };
+
     SvgCanvas.prototype.getItems = function() {
       return _.flatten(this._getItems(this.rootFolder));
     };
@@ -5793,6 +5990,10 @@
 
     SvgCanvas.prototype.removeItem = function(item) {
       return item.folder.remove(item);
+    };
+
+    SvgCanvas.prototype.removeItemById = function(id) {
+      return this.removeItem(this.getItemById(id));
     };
 
     SvgCanvas.prototype.addItem = function(item) {
@@ -6002,11 +6203,18 @@
       };
     };
 
-    SvgCanvas.prototype.deleteSelectdItem = function() {
-      var _this = this;
-      this.control.item_list.each(function(e) {
-        return _this.removeItem(e.get("origin_model"));
+    SvgCanvas.prototype.deleteSelectedItem = function() {
+      var commands, creator, service,
+        _this = this;
+      service = GLOBAL.commandService;
+      creator = service.getCreator();
+      commands = this.control.item_list.map(function(e) {
+        var id, item;
+        item = e.get("origin_model");
+        id = item.getElementId();
+        return new RemoveItemCommand(0, id, item.toXML());
       });
+      service.executeCommand(creator.createMultiCommand(commands));
       return this.control.clear();
     };
 
@@ -6210,7 +6418,7 @@
     };
 
     SvgItemToolView.prototype.mouseUpItem = function(sender, e) {
-      var canvas, canvas_matrix, clone_node, isContain, pos, screen_ctm,
+      var canvas, canvas_matrix, clone_node, com, creator, isContain, item, pos, screen_ctm, service,
         _this = this;
       canvas = this._canvas.$el;
       pos = canvas.position();
@@ -6221,11 +6429,15 @@
       this._getDraggingItemElement().empty();
       $("#svg-item-tool").hide();
       if (isContain()) {
+        service = GLOBAL.commandService;
+        creator = service.getCreator();
         clone_node = this.getSelectedItemElement(sender).cloneNode(true);
         $(this._mainCanvas).append(clone_node);
         canvas_matrix = this._mainCanvas.getScreenCTM();
         SVGUtil.setMatrixTransform(clone_node, canvas_matrix.inverse().multiply(screen_ctm));
-        return this._canvas.addElement(clone_node);
+        item = this._canvas.addElement(clone_node);
+        com = new AddItemCommand(0, item.getElementId(), item.toXML());
+        return service.executeCommand(com, false);
       }
     };
 
@@ -7296,6 +7508,50 @@
 }).call(this);
 
 (function() {
+  var _ref,
+    __hasProp = {}.hasOwnProperty,
+    __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
+
+  this.UndoRedoView = (function(_super) {
+    __extends(UndoRedoView, _super);
+
+    function UndoRedoView() {
+      _ref = UndoRedoView.__super__.constructor.apply(this, arguments);
+      return _ref;
+    }
+
+    UndoRedoView.prototype.events = {
+      "click #undo-button": "onClickUndo",
+      "click #redo-button": "onClickRedo"
+    };
+
+    UndoRedoView.prototype.initialize = function() {
+      this.command_stack = this.options.stack;
+      this.undo_button_el = this.$el.find('#undo-button');
+      this.redo_button_el = this.$el.find('#redo-button');
+      return this.listenTo(this.command_stack, 'change', this.render);
+    };
+
+    UndoRedoView.prototype.onClickUndo = function(e) {
+      return GLOBAL.commandService.undo();
+    };
+
+    UndoRedoView.prototype.onClickRedo = function(e) {
+      return GLOBAL.commandService.redo();
+    };
+
+    UndoRedoView.prototype.render = function() {
+      this.redo_button_el.prop('disabled', !this.command_stack.avaiableRedo());
+      return this.undo_button_el.prop('disabled', !this.command_stack.avaiableUndo());
+    };
+
+    return UndoRedoView;
+
+  })(Backbone.View);
+
+}).call(this);
+
+(function() {
   this.SVGUtil = (function() {
     function SVGUtil() {}
 
@@ -7881,6 +8137,11 @@
       manager: event_manager
     });
     mode_view.render();
+    _this.undo_redo_view = new UndoRedoView({
+      el: $('#undo-redo-view'),
+      stack: GLOBAL.commandService.command_stack
+    });
+    undo_redo_view.render();
     _ref = _.map(_.range(1, 30), function(e) {
       return 0.1 * e;
     });
@@ -7906,7 +8167,7 @@
     });
     key("backspace, delete", function(e) {
       e.preventDefault();
-      return SvgCanvasBase.deleteSelectdItem();
+      return SvgCanvasBase.deleteSelectedItem();
     });
     key("c", function(e) {
       return event_manager.setMode('control');
@@ -8004,7 +8265,7 @@
       return SvgCanvasBase.addFolder();
     });
     $("#delete-item-button").click(function(e) {
-      return SvgCanvasBase.deleteSelectdItem();
+      return SvgCanvasBase.deleteSelectedItem();
     });
     initPropertyEdit();
     return cloneControlView.hide();
@@ -8040,7 +8301,6 @@
         path._children.forEach(function(item) {
           var path_el;
           path_el = item1.el.cloneNode(true);
-          console.log(item);
           $(path_el).attr({
             "d": item.getPathData(),
             "fill-rule": "evenodd",
