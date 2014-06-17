@@ -237,7 +237,6 @@ $(document).ready(() =>
             # path type is paper.Group
             path._children.forEach((item) =>
                 path_el = item1.el.cloneNode(true)
-                console.log(item)
                 $(path_el).attr({
                     "d": item.getPathData(),
                     "fill-rule": "evenodd",

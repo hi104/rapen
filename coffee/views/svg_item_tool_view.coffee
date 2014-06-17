@@ -62,7 +62,6 @@ class @SvgItemToolView extends SvgItemListView
                 item.getElementId(),
                 item.toXML()
             )
-            console.log com, item
             service.executeCommand(com, false)
 
     mouseDraggingItem:(sender, e) =>

@@ -210,8 +210,6 @@ class @CloneControlView extends Backbone.View
             @_store_pre_item_attrs[id] = attr
         )
 
-        console.log @_store_pre_item_attrs
-
     _executeCommand:(control, e) ->
         service = GLOBAL.commandService
         creator = service.getCreator()
@@ -314,7 +312,7 @@ class @CloneControlView extends Backbone.View
                 clone_item.toXML()
             )
             commands.push com
-            copy_items.push clone_item
+            copy_items.push(clone_item)
         )
         service.executeCommand(
             creator.createMultiCommand(commands),
