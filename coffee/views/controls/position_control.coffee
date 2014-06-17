@@ -72,9 +72,6 @@ class @PositionControl extends Backbone.View
     getMoveMatrix:(e) ->
         @_getMoveMatrix(@_getSnapedPoint(e))
 
-    getMoveTransform: (e) ->
-        SVGUtil.toD3Transform(@getMoveTransform(e)).toString()
-
     movePosition:(matrix) =>
         @getItem().attr('transform', SVGUtil.toD3Transform(matrix).toString())
         # @getItem().setMatrix(matrix)
