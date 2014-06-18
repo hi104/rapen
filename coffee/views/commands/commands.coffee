@@ -47,7 +47,33 @@ class @RemoveItemCommand extends AddItemCommand
     undo:() ->
         @addItem()
 
+class @GroupCommand extends CommandBase
+    constructor: (@group_item_id, @group_item_ids) ->
+
+    execute: () ->
+        @group()
+
+    undo: () ->
+        @unGroup()
+
+    group:() ->
+        items = @group_item_ids.map((id) ->
+            SvgCanvasBase.getItemById(id)
+        )
+        grouped_item = SvgCanvasBase.group(items)
+        grouped_item.attr('id', @group_item_id)
+
+    unGroup:() ->
+        grouped_item = SvgCanvasBase.getItemById(@group_item_id)
+        SvgCanvasBase.unGroup(grouped_item)
+
+class @UnGroupCommand extends GroupCommand
+    execute: () ->
+        @unGroup()
+
+    undo: () ->
+        @group()
 #
-#
-# z-order change command
+# TODO:
+# - z-order change command
 #

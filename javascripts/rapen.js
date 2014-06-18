@@ -134,9 +134,10 @@
     };
 
     SvgElement.prototype._updateElementId = function(element) {
+      var _this = this;
       $(element).attr('id', this.generateId());
-      return $(element).find('*').each(function(i, e) {
-        return $(el).attr('id', this.generateId());
+      return $(element).find('*').each(function(i, el) {
+        return $(el).attr('id', _this.generateId());
       });
     };
 
@@ -1519,10 +1520,6 @@
       return this._getMoveMatrix(this._getSnapedPoint(e));
     };
 
-    PositionControl.prototype.getMoveTransform = function(e) {
-      return SVGUtil.toD3Transform(this.getMoveTransform(e)).toString();
-    };
-
     PositionControl.prototype.movePosition = function(matrix) {
       return this.getItem().attr('transform', SVGUtil.toD3Transform(matrix).toString());
     };
@@ -2594,7 +2591,7 @@
 }).call(this);
 
 (function() {
-  var _ref,
+  var _ref, _ref1,
     __hasProp = {}.hasOwnProperty,
     __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
 
@@ -2701,6 +2698,61 @@
     return RemoveItemCommand;
 
   })(AddItemCommand);
+
+  this.GroupCommand = (function(_super) {
+    __extends(GroupCommand, _super);
+
+    function GroupCommand(group_item_id, group_item_ids) {
+      this.group_item_id = group_item_id;
+      this.group_item_ids = group_item_ids;
+    }
+
+    GroupCommand.prototype.execute = function() {
+      return this.group();
+    };
+
+    GroupCommand.prototype.undo = function() {
+      return this.unGroup();
+    };
+
+    GroupCommand.prototype.group = function() {
+      var grouped_item, items;
+      items = this.group_item_ids.map(function(id) {
+        return SvgCanvasBase.getItemById(id);
+      });
+      grouped_item = SvgCanvasBase.group(items);
+      return grouped_item.attr('id', this.group_item_id);
+    };
+
+    GroupCommand.prototype.unGroup = function() {
+      var grouped_item;
+      grouped_item = SvgCanvasBase.getItemById(this.group_item_id);
+      return SvgCanvasBase.unGroup(grouped_item);
+    };
+
+    return GroupCommand;
+
+  })(CommandBase);
+
+  this.UnGroupCommand = (function(_super) {
+    __extends(UnGroupCommand, _super);
+
+    function UnGroupCommand() {
+      _ref1 = UnGroupCommand.__super__.constructor.apply(this, arguments);
+      return _ref1;
+    }
+
+    UnGroupCommand.prototype.execute = function() {
+      return this.unGroup();
+    };
+
+    UnGroupCommand.prototype.undo = function() {
+      return this.group();
+    };
+
+    return UnGroupCommand;
+
+  })(GroupCommand);
 
 }).call(this);
 
@@ -3041,9 +3093,11 @@
         get_item: null
       });
       this.position_control.onDragging = function(e) {
-        var pos;
+        var matrix, pos;
         pos = _this.position_control._getMovedControlPosition(e);
-        return _this.position_control.movePosition(pos);
+        matrix = _this.position_control._getMoveMatrix(pos);
+        _this.position_control.movePosition(matrix);
+        return svgPathControl.render();
       };
       this.position_control.bind("onMouseDown", function(obj, e) {
         var ondrop;
@@ -6092,14 +6146,18 @@
     };
 
     SvgCanvas.prototype.groupSelectedItem = function() {
-      var clone_origin_list, group,
+      var clone_origin_list, grouped_ids, grouped_item, id, service,
         _this = this;
       if (this.control.item_list.length > 0) {
         clone_origin_list = this.control.item_list.map(function(item) {
           return item.get("origin_model");
         });
-        group = this.group(clone_origin_list);
-        return this.control.setItems([group]);
+        grouped_item = this.group(clone_origin_list);
+        grouped_ids = _(clone_origin_list).invoke('getElementId');
+        id = grouped_item.getElementId();
+        service = GLOBAL.commandService;
+        service.executeCommand(new GroupCommand(id, grouped_ids), false);
+        return this.control.setItems([grouped_item]);
       }
     };
 
@@ -6120,23 +6178,30 @@
     };
 
     SvgCanvas.prototype.unGroupSelectedItem = function() {
+      var grouped_ids, grouped_item, grouped_item_id, grouped_items, service;
       if (this.control.isOneItem()) {
-        this.unGroup(this.control.firstOriginalItem());
+        grouped_item = this.control.firstOriginalItem();
+        grouped_items = this.unGroup(grouped_item);
+        grouped_ids = _(grouped_items).invoke('getElementId');
+        grouped_item_id = grouped_item.getElementId();
+        service = GLOBAL.commandService;
+        service.executeCommand(new UnGroupCommand(grouped_item_id, grouped_ids), false);
         return this.control.clear();
       }
     };
 
-    SvgCanvas.prototype.unGroup = function(item) {
-      var group_matrix,
+    SvgCanvas.prototype.unGroup = function(grouped_item) {
+      var group_matrix, grouped_items,
         _this = this;
-      group_matrix = SVGUtil.localMatrix(item.el);
-      _.each($(item.el).children(), function(el) {
+      group_matrix = SVGUtil.localMatrix(grouped_item.el);
+      grouped_items = _.map($(grouped_item.el).children(), function(el) {
         var matrix;
         matrix = group_matrix.multiply(SVGUtil.localMatrix(el));
         SVGUtil.setMatrixTransform(el, matrix);
         return _this.addElement(el);
       });
-      return this.item_list.remove(item);
+      this.item_list.remove(grouped_item);
+      return grouped_items;
     };
 
     SvgCanvas.prototype.group = function(items) {

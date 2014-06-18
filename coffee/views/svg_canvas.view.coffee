@@ -118,8 +118,17 @@ class @SvgCanvas extends Backbone.View
     groupSelectedItem:() =>
         if @control.item_list.length > 0
             clone_origin_list = @control.item_list.map((item) => item.get("origin_model"))
-            group =  @group(clone_origin_list)
-            @control.setItems([group])
+            grouped_item =  @group(clone_origin_list)
+
+            #add command for undo redo
+            grouped_ids = _(clone_origin_list).invoke('getElementId')
+            id = grouped_item.getElementId()
+            service = GLOBAL.commandService
+            service.executeCommand(
+                new GroupCommand(id, grouped_ids),
+                false
+            )
+            @control.setItems([grouped_item])
 
     addFolderSelectedItem:() =>
         if @control.item_list.length > 0
@@ -134,17 +143,27 @@ class @SvgCanvas extends Backbone.View
 
     unGroupSelectedItem:() =>
         if @control.isOneItem()
-            @unGroup(@control.firstOriginalItem())
+            grouped_item = @control.firstOriginalItem()
+            grouped_items = @unGroup(grouped_item)
+
+            grouped_ids = _(grouped_items).invoke('getElementId')
+            grouped_item_id = grouped_item.getElementId()
+            service = GLOBAL.commandService
+            service.executeCommand(
+                new UnGroupCommand(grouped_item_id, grouped_ids),
+                false
+            )
             @control.clear()
 
-    unGroup:(item) =>
-        group_matrix = SVGUtil.localMatrix(item.el)
-        _.each($(item.el).children(), (el) =>
+    unGroup:(grouped_item) =>
+        group_matrix = SVGUtil.localMatrix(grouped_item.el)
+        grouped_items = _.map($(grouped_item.el).children(), (el) =>
             matrix = group_matrix.multiply(SVGUtil.localMatrix(el))
             SVGUtil.setMatrixTransform(el, matrix)
             @addElement(el)
-            )
-        @item_list.remove(item)
+        )
+        @item_list.remove(grouped_item)
+        grouped_items
 
     group:(items) =>
         canvas = @mainCanvas
