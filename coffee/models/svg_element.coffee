@@ -34,7 +34,7 @@ class @SvgElement extends Backbone.Model
     _updateElementId:(element)->
         $(element).attr('id', @generateId())
 
-        $(element).find('*').each((i, e) ->
+        $(element).find('*').each((i, el) =>
             $(el).attr('id', @generateId())
         )
 
